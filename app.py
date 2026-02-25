@@ -5,7 +5,7 @@ from calculate import calculate_attainment
 
 st.title("CO-PO Attainment System")
 
-# ---------------- SUBJECT DETAILS ----------------
+
 
 st.subheader("Subject Details")
 
@@ -23,7 +23,7 @@ method = st.radio(
     ("Separate CO Input", "Weightage by Marks")
 )
 
-# ---------------- STUDENT INPUT ----------------
+
 
 st.subheader("Student Details")
 
