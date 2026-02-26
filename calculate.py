@@ -70,8 +70,28 @@ def calculate_attainment(subject, code, threshold, max_marks):
         ]
     })
 
-    with pd.ExcelWriter("CO_Attainment.xlsx", engine='openpyxl') as writer:
+    # ----------- CREATE EXCEL WITH HISTOGRAM -----------
+
+    with pd.ExcelWriter("CO_Attainment.xlsx", engine='xlsxwriter') as writer:
+
         df.to_excel(writer, sheet_name="Student Data", index=False)
         summary.to_excel(writer, sheet_name="Attainment Summary", index=False)
 
-    return df,summary
+        workbook  = writer.book
+        worksheet = writer.sheets["Student Data"]
+
+        chart = workbook.add_chart({'type': 'column'})
+
+        chart.add_series({
+            'name': 'Marks Distribution',
+            'categories': f'=Student Data!$B$2:$B${len(df)+1}',
+            'values':     f'=Student Data!$B$2:$B${len(df)+1}',
+        })
+
+        chart.set_title({'name': 'Marks Distribution Histogram'})
+        chart.set_x_axis({'name': 'Total Marks'})
+        chart.set_y_axis({'name': 'Number of Students'})
+
+        worksheet.insert_chart('E2', chart)
+
+    return df, summary

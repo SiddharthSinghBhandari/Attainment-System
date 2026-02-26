@@ -1,97 +1,76 @@
-import pandas as pd
+import streamlit as st
+import matplotlib.pyplot as plt
 from db import students
+from calculate import calculate_attainment
 
-def calculate_attainment(subject, code, threshold, max_marks):
+st.title("CO-PO Attainment System")
 
-    data = list(students.find({
+# ---------------- SUBJECT DETAILS ----------------
+
+st.subheader("Subject Details")
+
+subject = st.text_input("Enter Subject Name")
+code = st.text_input("Enter Subject Code")
+
+total_students = st.number_input("Total Number of Students", min_value=1)
+max_marks = st.number_input("Maximum Marks", min_value=1)
+threshold = st.number_input("Threshold Marks", min_value=0)
+
+co_no = st.number_input("How many CO (Course Outcome) do you want?", min_value=1, max_value=6)
+
+# ---------------- STUDENT INPUT ----------------
+
+st.subheader("Student Details")
+
+name = st.text_input("Student Name")
+status = st.selectbox("Attendance", ["Present","Absent"])
+
+marks = []
+
+for i in range(int(co_no)):
+    m = st.number_input(f"Enter CO{i+1} Marks", min_value=0)
+    marks.append(m)
+
+total = sum(marks)
+
+# ---------------- STORE DATA ----------------
+
+if st.button("Submit Student Data"):
+
+    students.insert_one({
+        "student": name,
         "subject": subject,
-        "code": code
-    }))
-
-    present = 0
-    absent = 0
-    above = 0
-    below = 0
-
-    result = []
-
-    for i in data:
-
-        status = i.get("status","Present")
-
-        if status == "Absent":
-            absent += 1
-            continue
-
-        present += 1
-
-        total = i.get("total",0)
-
-        if total >= threshold:
-            above += 1
-        else:
-            below += 1
-
-        result.append({
-            "Student": i.get("student"),
-            "Total Marks": total,
-            "Status": status
-        })
-
-    percent = (above/present)*100 if present>0 else 0
-
-    if percent >= 70:
-        attainment = 3
-    elif percent >= 60:
-        attainment = 2
-    elif percent >= 50:
-        attainment = 1
-    else:
-        attainment = 0
-
-    df = pd.DataFrame(result)
-
-    summary = pd.DataFrame({
-        "Parameter":[
-            "Present Students",
-            "Absent Students",
-            "Students Above Threshold",
-            "Students Below Threshold",
-            "% Students Above Threshold",
-            "CO Attainment Level"
-        ],
-        "Value":[
-            present,
-            absent,
-            above,
-            below,
-            percent,
-            attainment
-        ]
+        "code": code,
+        "total_students": total_students,
+        "max_marks": max_marks,
+        "threshold": threshold,
+        "co_marks": marks,
+        "total": total,
+        "status": status
     })
 
-    # ----------- CREATE EXCEL WITH HISTOGRAM -----------
+    st.success("Student Data Stored Successfully!")
 
-    with pd.ExcelWriter("CO_Attainment.xlsx", engine='xlsxwriter') as writer:
+# ---------------- CALCULATE ----------------
 
-        df.to_excel(writer, sheet_name="Student Data", index=False)
-        summary.to_excel(writer, sheet_name="Attainment Summary", index=False)
+if st.button("Calculate Attainment"):
 
-        workbook  = writer.book
-        worksheet = writer.sheets["Student Data"]
+    df, summary = calculate_attainment(subject, code, threshold, max_marks)
 
-        chart = workbook.add_chart({'type': 'column'})
+    st.success("Attainment Calculated Successfully!")
 
-        chart.add_series({
-            'name': 'Marks Distribution',
-            'categories': f'=Student Data!$B$2:$B${len(df)+1}',
-            'values':     f'=Student Data!$B$2:$B${len(df)+1}',
-        })
+    # --------- SHOW HISTOGRAM ONLY ---------
+    fig, ax = plt.subplots()
+    ax.hist(df["Total Marks"])
+    ax.set_xlabel("Total Marks")
+    ax.set_ylabel("Number of Students")
+    ax.set_title("Marks Distribution")
+    st.pyplot(fig)
 
-        chart.set_title({'name': 'Marks Distribution Histogram'})
-        chart.set_x_axis({'name': 'Total Marks'})
-        chart.set_y_axis({'name': 'Number of Students'})
-
-        worksheet.insert_chart('E2', chart)
-
-    return df, summary
+    # --------- DOWNLOAD EXCEL ---------
+    with open("CO_Attainment.xlsx", "rb") as f:
+        st.download_button(
+            label="Download Attainment Excel Sheet",
+            data=f,
+            file_name="CO_Attainment.xlsx"
+        )
