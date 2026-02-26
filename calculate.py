@@ -1,9 +1,12 @@
 import pandas as pd
 from db import students
 
-def calculate_attainment(threshold, max_marks):
+def calculate_attainment(subject, code, threshold, max_marks):
 
-    data = list(students.find())
+    data = list(students.find({
+        "subject": subject,
+        "code": code
+    }))
 
     present = 0
     absent = 0
