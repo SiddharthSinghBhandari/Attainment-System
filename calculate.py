@@ -1,9 +1,12 @@
 import pandas as pd
 from db import students
 
-def calculate_attainment(threshold, max_marks):
+def calculate_attainment(subject, code, threshold, max_marks):
 
-    data = list(students.find())
+    data = list(students.find({
+        "subject": subject,
+        "code": code
+    }))
 
     present = 0
     absent = 0
@@ -68,9 +71,7 @@ def calculate_attainment(threshold, max_marks):
     })
 
     with pd.ExcelWriter("CO_Attainment.xlsx", engine='openpyxl') as writer:
-
         df.to_excel(writer, sheet_name="Student Data", index=False)
-
         summary.to_excel(writer, sheet_name="Attainment Summary", index=False)
 
     return df,summary

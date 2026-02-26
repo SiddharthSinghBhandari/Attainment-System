@@ -59,7 +59,7 @@ if st.button("Submit Student Data"):
 
 if st.button("Calculate Attainment"):
 
-    df, summary = calculate_attainment(threshold, max_marks)
+    df, summary = calculate_attainment(subject, code, threshold, max_marks)
 
     st.write(df)
     st.write(summary)
