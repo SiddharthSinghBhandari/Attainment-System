@@ -77,6 +77,27 @@ def calculate_attainment(subject, code, threshold, max_marks):
         df.to_excel(writer, sheet_name="Student Data", index=False)
         summary.to_excel(writer, sheet_name="Attainment Summary", index=False)
 
+        # ----------- ATTAINMENT CRITERIA SHEET -----------
+
+        criteria = pd.DataFrame({
+            "Percentage of Students Scoring Above Threshold":[
+                ">= 70%",
+                ">= 60% and < 70%",
+                ">= 50% and < 60%",
+                "< 50%"
+            ],
+            "CO Attainment Level":[
+                "Level 3",
+                "Level 2",
+                "Level 1",
+                "Level 0"
+            ]
+        })
+
+        criteria.to_excel(writer, sheet_name="Attainment Criteria", index=False)
+
+        # ----------- HISTOGRAM -----------
+
         workbook  = writer.book
         worksheet = writer.sheets["Student Data"]
 
@@ -88,7 +109,7 @@ def calculate_attainment(subject, code, threshold, max_marks):
             'values':     f'=Student Data!$B$2:$B${len(df)+1}',
         })
 
-        chart.set_title({'name': 'Marks Distribution Histogram'})
+        chart.set_title({'name': 'Marks Distribution'})
         chart.set_x_axis({'name': 'Total Marks'})
         chart.set_y_axis({'name': 'Number of Students'})
 

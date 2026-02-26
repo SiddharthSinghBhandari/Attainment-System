@@ -18,6 +18,11 @@ threshold = st.number_input("Threshold Marks", min_value=0)
 
 co_no = st.number_input("How many CO (Course Outcome) do you want?", min_value=1, max_value=6)
 
+method = st.radio(
+    "Select CO Input Method",
+    ("Separate CO Input", "Weightage by Marks")
+)
+
 # ---------------- STUDENT INPUT ----------------
 
 st.subheader("Student Details")
