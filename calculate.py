@@ -1,50 +1,76 @@
 import pandas as pd
 from db import students
 
-def calculate_attainment(subject, code, threshold, max_marks):
+def calculate_attainment(threshold, max_marks):
 
-    data = list(students.find({
-        "subject": subject,
-        "code": code
-    }))
+    data = list(students.find())
 
-    if len(data) == 0:
-        return pd.DataFrame(), {}
+    present = 0
+    absent = 0
+    above = 0
+    below = 0
 
-    df = pd.DataFrame(data)
+    result = []
 
-    df.columns = df.columns.str.strip()
+    for i in data:
 
-    # keep only present students
-    df = df[df["status"] == "Present"]
+        status = i.get("status","Present")
 
-    # ----------- CREATE TOTAL HERE -----------
-    if "co_marks" in df.columns:
-        df["total"] = df["co_marks"].apply(
-            lambda x: sum(x) if isinstance(x, list) else 0
-        )
+        if status == "Absent":
+            absent += 1
+            continue
 
-    df["total"] = pd.to_numeric(df["total"], errors="coerce")
+        present += 1
 
-    # ---------- ATTAINMENT CALC ----------
-    above = len(df[df["total"] >= threshold])
-    below = len(df[df["total"] < threshold])
-    total_present = len(df)
+        total = i.get("total",0)
 
-    percent = (above / total_present) * 100 if total_present > 0 else 0
+        if total >= threshold:
+            above += 1
+        else:
+            below += 1
+
+        result.append({
+            "Student": i.get("student"),
+            "Total Marks": total,
+            "Status": status
+        })
+
+    percent = (above/present)*100 if present>0 else 0
 
     if percent >= 70:
-        level = 3
+        attainment = 3
     elif percent >= 60:
-        level = 2
+        attainment = 2
+    elif percent >= 50:
+        attainment = 1
     else:
-        level = 1
+        attainment = 0
 
-    summary = {
-        "Students Above Threshold": above,
-        "Students Below Threshold": below,
-        "% Students Above Threshold": percent,
-        "CO Attainment Level": level
-    }
+    df = pd.DataFrame(result)
 
-    return df, summary
+    summary = pd.DataFrame({
+        "Parameter":[
+            "Present Students",
+            "Absent Students",
+            "Students Above Threshold",
+            "Students Below Threshold",
+            "% Students Above Threshold",
+            "CO Attainment Level"
+        ],
+        "Value":[
+            present,
+            absent,
+            above,
+            below,
+            percent,
+            attainment
+        ]
+    })
+
+    with pd.ExcelWriter("CO_Attainment.xlsx", engine='openpyxl') as writer:
+
+        df.to_excel(writer, sheet_name="Student Data", index=False)
+
+        summary.to_excel(writer, sheet_name="Attainment Summary", index=False)
+
+    return df,summary

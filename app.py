@@ -1,7 +1,5 @@
 import streamlit as st
 import matplotlib.pyplot as plt
-import pandas as pd
-import io
 from db import students
 from calculate import calculate_attainment
 
@@ -25,12 +23,13 @@ method = st.radio(
     ("Separate CO Input", "Weightage by Marks")
 )
 
-# ---------------- STUDENT DETAILS ----------------
+# ---------------- STUDENT INPUT ----------------
 
 st.subheader("Student Details")
 
 name = st.text_input("Student Name")
-status = st.selectbox("Attendance", ["Present", "Absent"])
+
+status = st.selectbox("Attendance", ["Present","Absent"])
 
 marks = []
 
@@ -58,45 +57,22 @@ if st.button("Submit Student Data"):
 
     st.success("Student Data Stored Successfully!")
 
-# ---------------- CALCULATE ----------------
-
 if st.button("Calculate Attainment"):
 
-    df, summary = calculate_attainment(subject, code, threshold, max_marks)
+    df, summary = calculate_attainment(threshold, max_marks)
 
-    if df.empty:
-        st.warning("No student data found!")
-        st.stop()
-
-    df.columns = df.columns.str.strip()
-
-    st.subheader("Student Data")
     st.write(df)
-
-    st.subheader("Attainment Summary")
     st.write(summary)
 
-    # ---------- HISTOGRAM ----------
     fig, ax = plt.subplots()
-    ax.hist(df["total"].dropna())
-    ax.set_xlabel("Total Marks")
-    ax.set_ylabel("Number of Students")
-    ax.set_title("Marks Distribution")
-
+    ax.hist(df["Total Marks"])
     st.pyplot(fig)
 
-    # ---------- EXCEL DOWNLOAD ----------
-    excel_buffer = io.BytesIO()
+    with open("CO_Attainment.xlsx", "rb") as f:
+        st.download_button(
+            "Download Excel",
+            f,
+            file_name="CO_Attainment.xlsx"
 
-    with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
-        df.to_excel(writer, sheet_name="Student Data", index=False)
-        pd.DataFrame([summary]).to_excel(writer, sheet_name="Summary", index=False)
+        )
 
-    excel_buffer.seek(0)
-
-    st.download_button(
-        label="Download Excel",
-        data=excel_buffer,
-        file_name="CO_Attainment.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
