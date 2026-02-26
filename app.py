@@ -1,6 +1,7 @@
 import streamlit as st
 import matplotlib.pyplot as plt
 import pandas as pd
+import io
 from db import students
 from calculate import calculate_attainment
 
@@ -84,10 +85,18 @@ if st.button("Calculate Attainment"):
 
     st.pyplot(fig)
 
-    # ---------- DOWNLOAD ----------
-    with open("CO_Attainment.xlsx", "rb") as f:
-        st.download_button(
-            "Download Excel",
-            f,
-            file_name="CO_Attainment.xlsx"
-        )
+    # ---------- EXCEL DOWNLOAD ----------
+    excel_buffer = io.BytesIO()
+
+    with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
+        df.to_excel(writer, sheet_name="Student Data", index=False)
+        pd.DataFrame([summary]).to_excel(writer, sheet_name="Summary", index=False)
+
+    excel_buffer.seek(0)
+
+    st.download_button(
+        label="Download Excel",
+        data=excel_buffer,
+        file_name="CO_Attainment.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
