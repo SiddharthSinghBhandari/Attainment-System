@@ -65,7 +65,7 @@ if st.button("Calculate Attainment"):
     st.write(summary)
 
     fig, ax = plt.subplots()
-    ax.hist(df["Total Marks"])
+    ax.hist(df["total"])
     st.pyplot(fig)
 
     with open("CO_Attainment.xlsx", "rb") as f:
