@@ -61,18 +61,12 @@ if st.button("Calculate Attainment"):
 
     df, summary = calculate_attainment(subject, code, threshold, max_marks)
 
-    st.write(df)
-    st.write(summary)
-
-    fig, ax = plt.subplots()
-    ax.hist(df["Total Marks"])
-    st.pyplot(fig)
+    st.success("Attainment Calculated Successfully!")
 
     with open("CO_Attainment.xlsx", "rb") as f:
         st.download_button(
-            "Download Excel",
-            f,
+            label="Download Attainment Excel Sheet",
+            data=f,
             file_name="CO_Attainment.xlsx"
-
         )
 
