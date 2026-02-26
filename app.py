@@ -67,16 +67,7 @@ if st.button("Calculate Attainment"):
         st.warning("No student data found!")
         st.stop()
 
-    # ---------- CLOUD SAFE CLEANING ----------
     df.columns = df.columns.str.strip()
-
-    # recreate total if missing
-    if "total" not in df.columns:
-        if "co_marks" in df.columns:
-            df["total"] = df["co_marks"].apply(lambda x: sum(x) if isinstance(x, list) else 0)
-
-    # convert to numeric (cloud reads string sometimes)
-    df["total"] = pd.to_numeric(df["total"], errors="coerce")
 
     st.subheader("Student Data")
     st.write(df)
