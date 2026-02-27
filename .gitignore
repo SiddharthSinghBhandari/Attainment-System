@@ -1,3 +1,7 @@
 .streamlit/secrets.toml
 .vscode/settings.json
 _pycache__/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
