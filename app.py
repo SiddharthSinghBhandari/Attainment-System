@@ -5,7 +5,7 @@ from calculate import calculate_attainment
 
 st.title("CO-PO Attainment System")
 
-# ---------------- SUBJECT DETAILS ----------------
+
 
 st.subheader("Subject Details")
 
