@@ -5,14 +5,14 @@ from calculate import calculate_attainment
 
 st.title("CO-PO ttainment System")
 
-# ---------------- SUBJECT DETAILS ----------------
+
 
 st.subheader("Subject Details")
 
 subject = st.text_input("Enter Subject Name")
 code = st.text_input("Enter Subject Code")
 
-total_students = st.number_input("Total Number of Students", min_value=1)
+total_students = st.number_input("Total number of Students", min_value=1)
 max_marks = st.number_input("Maximum Marks", min_value=1)
 threshold = st.number_input("Threshold Marks", min_value=0)
 
