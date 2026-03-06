@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from db import students
 from calculate import calculate_attainment
 
-st.title("CO-PO Attainment System")
+st.title("CO-PO ttainment System")
 
 # ---------------- SUBJECT DETAILS ----------------
 
@@ -19,7 +19,7 @@ threshold = st.number_input("Threshold Marks", min_value=0)
 co_no = st.number_input("How many CO (Course Outcome) do you want?", min_value=1, max_value=6)
 
 method = st.radio(
-    "Select CO Input Method",
+    "Do you want CO separately or weightage according to marks?",
     ("Separate CO Input", "Weightage by Marks")
 )
 
@@ -28,6 +28,7 @@ method = st.radio(
 st.subheader("Student Details")
 
 name = st.text_input("Student Name")
+
 status = st.selectbox("Attendance", ["Present","Absent"])
 
 marks = []
@@ -56,26 +57,20 @@ if st.button("Submit Student Data"):
 
     st.success("Student Data Stored Successfully!")
 
-# ---------------- CALCULATE ----------------
-
 if st.button("Calculate Attainment"):
 
-    df, summary = calculate_attainment(subject, code, threshold, max_marks)
+    df, summary = calculate_attainment(threshold, max_marks)
 
-    st.success("Attainment Calculated Successfully!")
+    st.write(df)
+    st.write(summary)
 
-    # --------- SHOW HISTOGRAM ONLY ---------
     fig, ax = plt.subplots()
     ax.hist(df["Total Marks"])
-    ax.set_xlabel("Total Marks")
-    ax.set_ylabel("Number of Students")
-    ax.set_title("Marks Distribution")
     st.pyplot(fig)
 
-    # --------- DOWNLOAD EXCEL ---------
     with open("CO_Attainment.xlsx", "rb") as f:
         st.download_button(
-            label="Download Attainment Excel Sheet",
-            data=f,
+            "Download Excel",
+            f,
             file_name="CO_Attainment.xlsx"
         )

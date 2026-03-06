@@ -1,12 +1,9 @@
 import pandas as pd
 from db import students
 
-def calculate_attainment(subject, code, threshold, max_marks):
+def calculate_attainment(threshold, max_marks):
 
-    data = list(students.find({
-        "subject": subject,
-        "code": code
-    }))
+    data = list(students.find())
 
     present = 0
     absent = 0
@@ -70,49 +67,10 @@ def calculate_attainment(subject, code, threshold, max_marks):
         ]
     })
 
-    # ----------- CREATE EXCEL WITH HISTOGRAM -----------
-
-    with pd.ExcelWriter("CO_Attainment.xlsx", engine='xlsxwriter') as writer:
+    with pd.ExcelWriter("CO_Attainment.xlsx", engine='openpyxl') as writer:
 
         df.to_excel(writer, sheet_name="Student Data", index=False)
+
         summary.to_excel(writer, sheet_name="Attainment Summary", index=False)
 
-        # ----------- ATTAINMENT CRITERIA SHEET -----------
-
-        criteria = pd.DataFrame({
-            "Percentage of Students Scoring Above Threshold":[
-                ">= 70%",
-                ">= 60% and < 70%",
-                ">= 50% and < 60%",
-                "< 50%"
-            ],
-            "CO Attainment Level":[
-                "Level 3",
-                "Level 2",
-                "Level 1",
-                "Level 0"
-            ]
-        })
-
-        criteria.to_excel(writer, sheet_name="Attainment Criteria", index=False)
-
-        # ----------- HISTOGRAM -----------
-
-        workbook  = writer.book
-        worksheet = writer.sheets["Student Data"]
-
-        chart = workbook.add_chart({'type': 'column'})
-
-        chart.add_series({
-            'name': 'Marks Distribution',
-            'categories': f'=Student Data!$B$2:$B${len(df)+1}',
-            'values':     f'=Student Data!$B$2:$B${len(df)+1}',
-        })
-
-        chart.set_title({'name': 'Marks Distribution'})
-        chart.set_x_axis({'name': 'Total Marks'})
-        chart.set_y_axis({'name': 'Number of Students'})
-
-        worksheet.insert_chart('E2', chart)
-
-    return df, summary
+    return df,summary
