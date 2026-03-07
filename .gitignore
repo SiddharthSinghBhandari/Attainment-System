@@ -1,23 +1,16 @@
-# Streamlit secrets
+# Streamlit secrets (MongoDB URI etc.)
 .streamlit/secrets.toml
+
+# Python cache files
+__pycache__/
+*.pyc
 
 # VS Code settings
 .vscode/
 
-# Python cache
-__pycache__/
-*.pyc
-
-# Environment files
+# Environment variables
 .env
 .env.*
 
-# Logo / images you don't want on GitHub
-logo.jpg
-logo.png
-
-# Mac system files
-.DS_Store
-
-# Excel output files
+# Generated Excel output
 CO_Attainment.xlsx
