@@ -1,76 +1,215 @@
 import streamlit as st
 import matplotlib.pyplot as plt
-from db import students
+from db import students, users
 from calculate import calculate_attainment
 
-st.title("CO-PO ttainment System")
+if "page" not in st.session_state:
+    st.session_state.page = "home"
 
 
+# ---------------- HOME ----------------
 
-st.subheader("Subject Details")
+if st.session_state.page == "home":
 
-subject = st.text_input("Enter Subject Name")
-code = st.text_input("Enter Subject Code")
+    st.title("CO-PO Attainment System")
 
-total_students = st.number_input("Total number of Students", min_value=1)
-max_marks = st.number_input("Maximum Marks", min_value=1)
-threshold = st.number_input("Threshold Marks", min_value=0)
+    st.subheader("Access Portal")
 
-co_no = st.number_input("How many CO (Course Outcome) do you want?", min_value=1, max_value=6)
+    if st.button("Admin Register"):
+        st.session_state.page = "admin_register"
 
-method = st.radio(
-    "Do you want CO separately or weightage according to marks?",
-    ("Separate CO Input", "Weightage by Marks")
-)
+    if st.button("Admin Login"):
+        st.session_state.page = "admin_login"
 
-# ---------------- STUDENT INPUT ----------------
+    if st.button("Teacher Login"):
+        st.session_state.page = "teacher_login"
 
-st.subheader("Student Details")
 
-name = st.text_input("Student Name")
+# ---------------- ADMIN REGISTER ----------------
 
-status = st.selectbox("Attendance", ["Present","Absent"])
+elif st.session_state.page == "admin_register":
 
-marks = []
+    st.title("Create Admin Account")
 
-for i in range(int(co_no)):
-    m = st.number_input(f"Enter CO{i+1} Marks", min_value=0)
-    marks.append(m)
+    username = st.text_input("Admin Username", key="admin_reg_user")
+    password = st.text_input("Password", type="password", key="admin_reg_pass")
 
-total = sum(marks)
+    if st.button("Create Admin"):
 
-# ---------------- STORE DATA ----------------
+        if users.find_one({"role":"admin"}):
+            st.error("Admin already exists")
 
-if st.button("Submit Student Data"):
+        else:
 
-    students.insert_one({
-        "student": name,
-        "subject": subject,
-        "code": code,
-        "total_students": total_students,
-        "max_marks": max_marks,
-        "threshold": threshold,
-        "co_marks": marks,
-        "total": total,
-        "status": status
-    })
+            users.insert_one({
+                "username": username,
+                "password": password,
+                "role": "admin"
+            })
 
-    st.success("Student Data Stored Successfully!")
+            st.success("Admin account created")
 
-if st.button("Calculate Attainment"):
+    if st.button("Back"):
+        st.session_state.page = "home"
+        st.rerun()
 
-    df, summary = calculate_attainment(threshold, max_marks)
 
-    st.write(df)
-    st.write(summary)
+# ---------------- ADMIN LOGIN ----------------
 
-    fig, ax = plt.subplots()
-    ax.hist(df["Total Marks"])
-    st.pyplot(fig)
+elif st.session_state.page == "admin_login":
 
-    with open("CO_Attainment.xlsx", "rb") as f:
-        st.download_button(
-            "Download Excel",
-            f,
-            file_name="CO_Attainment.xlsx"
-        )
+    st.title("Admin Login")
+
+    username = st.text_input("Username", key="admin_login_user")
+    password = st.text_input("Password", type="password", key="admin_login_pass")
+
+    if st.button("Login"):
+
+        user = users.find_one({
+            "username": username,
+            "password": password,
+            "role": "admin"
+        })
+
+        if user:
+            st.session_state.page = "admin_panel"
+            st.rerun()
+        else:
+            st.error("Invalid login")
+
+    if st.button("Back"):
+        st.session_state.page = "home"
+        st.rerun()
+
+
+# ---------------- TEACHER LOGIN ----------------
+
+elif st.session_state.page == "teacher_login":
+
+    st.title("Teacher Login")
+
+    username = st.text_input("Username", key="teacher_login_user")
+    password = st.text_input("Password", type="password", key="teacher_login_pass")
+
+    if st.button("Login"):
+
+        user = users.find_one({
+            "username": username,
+            "password": password,
+            "role": "teacher"
+        })
+
+        if user:
+            st.session_state.page = "teacher_panel"
+            st.rerun()
+        else:
+            st.error("Invalid login")
+
+    if st.button("Back"):
+        st.session_state.page = "home"
+        st.rerun()
+
+
+# ---------------- ADMIN PANEL ----------------
+
+elif st.session_state.page == "admin_panel":
+
+    st.title("Admin Dashboard")
+
+    st.subheader("Create Teacher")
+
+    t_user = st.text_input("Teacher Username", key="add_teacher_user")
+    t_pass = st.text_input("Teacher Password", type="password", key="add_teacher_pass")
+
+    if st.button("Add Teacher"):
+
+        users.insert_one({
+            "username": t_user,
+            "password": t_pass,
+            "role": "teacher"
+        })
+
+        st.success("Teacher Added")
+
+    st.subheader("Remove Teacher")
+
+    remove_user = st.text_input("Teacher Username", key="remove_teacher_user")
+
+    if st.button("Delete Teacher"):
+
+        users.delete_one({
+            "username": remove_user,
+            "role": "teacher"
+        })
+
+        st.success("Teacher Removed")
+
+    if st.button("Logout"):
+        st.session_state.page = "home"
+        st.rerun()
+
+
+# ---------------- TEACHER PANEL ----------------
+
+elif st.session_state.page == "teacher_panel":
+
+    st.title("Teacher Dashboard")
+
+    subject = st.text_input("Subject Name")
+    code = st.text_input("Subject Code")
+
+    total_students = st.number_input("Total Students", min_value=1)
+    max_marks = st.number_input("Maximum Marks", min_value=1)
+    threshold = st.number_input("Threshold Marks", min_value=0)
+
+    co_no = st.number_input("Number of CO", min_value=1, max_value=6)
+
+    st.subheader("Student Details")
+
+    name = st.text_input("Student Name")
+    status = st.selectbox("Attendance", ["Present","Absent"])
+
+    marks = []
+
+    for i in range(int(co_no)):
+        m = st.number_input(f"CO{i+1} Marks", min_value=0)
+        marks.append(m)
+
+    total = sum(marks)
+
+    if st.button("Add Student"):
+
+        students.insert_one({
+            "student": name,
+            "subject": subject,
+            "code": code,
+            "total_students": total_students,
+            "max_marks": max_marks,
+            "threshold": threshold,
+            "co_marks": marks,
+            "total": total,
+            "status": status
+        })
+
+        st.success("Student Added")
+
+    if st.button("Calculate Attainment"):
+
+        df, summary = calculate_attainment(threshold, max_marks)
+
+        st.write(summary)
+
+        fig, ax = plt.subplots()
+        ax.hist(df["Total Marks"])
+        st.pyplot(fig)
+
+        with open("CO_Attainment.xlsx", "rb") as f:
+            st.download_button(
+                "Download Excel",
+                f,
+                file_name="CO_Attainment.xlsx"
+            )
+
+    if st.button("Logout"):
+        st.session_state.page = "home"
+        st.rerun()

@@ -8,3 +8,4 @@ client = MongoClient(MONGO_URI)
 db = client["attainment_system"]
 
 students = db["students"]
+users = db["users"]
