@@ -51,7 +51,7 @@ navbar()
 st.markdown("<h1>CO-PO Attainment System</h1>", unsafe_allow_html=True)
 
 
-# -------- CENTER LOGO IMAGE --------
+# -------- CENTER LOGO IMAGE -------- asdasdasd
 
 # -------- CENTER LOGO IMAGE --------
 
