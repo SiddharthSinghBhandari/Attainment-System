@@ -72,21 +72,4 @@ def calculate_attainment(threshold, max_marks):
         df.to_excel(writer, sheet_name="Student Data", index=False)
         summary.to_excel(writer, sheet_name="Attainment Summary", index=False)
 
-        criteria = pd.DataFrame({
-            "Percentage":[
-                ">=70%",
-                ">=60% and <70%",
-                ">=50% and <60%",
-                "<50%"
-            ],
-            "Level":[
-                "Level 3",
-                "Level 2",
-                "Level 1",
-                "Level 0"
-            ]
-        })
-
-        criteria.to_excel(writer, sheet_name="Attainment Criteria", index=False)
-
     return df, summary
