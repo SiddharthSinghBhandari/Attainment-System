@@ -1,3 +1,23 @@
+# Streamlit secrets
 .streamlit/secrets.toml
-.vscode/settings.json
+
+# VS Code settings
+.vscode/
+
+# Python cache
 __pycache__/
+*.pyc
+
+# Environment files
+.env
+.env.*
+
+# Logo / images you don't want on GitHub
+logo.jpg
+logo.png
+
+# Mac system files
+.DS_Store
+
+# Excel output files
+CO_Attainment.xlsx
