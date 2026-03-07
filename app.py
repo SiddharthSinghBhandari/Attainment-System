@@ -53,11 +53,14 @@ st.markdown("<h1>CO-PO Attainment System</h1>", unsafe_allow_html=True)
 
 # -------- CENTER LOGO IMAGE --------
 
-st.markdown('<div class="logo-container">', unsafe_allow_html=True)
-col1, col2, col3 = st.columns([1,3,1])
+# -------- CENTER LOGO IMAGE --------
+
+logo_url = "https://fimt-ggsipu.org/images/flogo2025-1.jpg"
+
+col1, col2, col3 = st.columns([1,4,1])
 
 with col2:
-    st.image("logo.jpg", width=450)
+    st.image(logo_url, width=450)
 
 st.markdown('</div>', unsafe_allow_html=True)
 
