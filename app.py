@@ -1,23 +1,14 @@
 import streamlit as st
 import matplotlib.pyplot as plt
-import os
-
 from db import students, users
 from calculate import calculate_attainment
 
-
-# -------- LOAD CSS SAFELY --------
+# Load CSS
 def load_css():
-
-    css_path = os.path.join("styles","style.css")
-
-    if os.path.exists(css_path):
-
-        with open(css_path) as f:
-            st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+    with open("styles.css") as f:
+        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
 load_css()
-
 
 if "page" not in st.session_state:
     st.session_state.page="home"
