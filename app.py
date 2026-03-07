@@ -15,18 +15,21 @@ if "page" not in st.session_state:
 
 
 # HOME
-if st.session_state.page=="home":
+if st.session_state.page == "home":
 
-    st.markdown("<h1>CO-PO Attainment System</h1>",unsafe_allow_html=True)
+    st.markdown("<h1>CO-PO Attainment System</h1>", unsafe_allow_html=True)
 
     if st.button("Admin Register"):
-        st.session_state.page="admin_register"
+        st.session_state.page = "admin_register"
+        st.rerun()
 
     if st.button("Admin Login"):
-        st.session_state.page="admin_login"
+        st.session_state.page = "admin_login"
+        st.rerun()
 
     if st.button("Teacher Login"):
-        st.session_state.page="teacher_login"
+        st.session_state.page = "teacher_login"
+        st.rerun()
 
 
 # ADMIN REGISTER
@@ -112,40 +115,72 @@ elif st.session_state.page=="teacher_login":
 
 
 # ADMIN PANEL
-elif st.session_state.page=="admin_panel":
+elif st.session_state.page == "admin_panel":
 
     st.header("Admin Dashboard")
 
+    # ---------------- ADD TEACHER ----------------
+
     st.subheader("Create Teacher")
 
-    t_user=st.text_input("Teacher Username",key="add_teacher_user")
-    t_pass=st.text_input("Teacher Password",type="password",key="add_teacher_pass")
+    t_user = st.text_input("Teacher Username", key="add_teacher_user")
+    t_pass = st.text_input("Teacher Password", type="password", key="add_teacher_pass")
 
     if st.button("Add Teacher"):
 
-        users.insert_one({
-            "username":t_user,
-            "password":t_pass,
-            "role":"teacher"
-        })
+        if t_user == "" or t_pass == "":
+            st.warning("Please enter username and password")
 
-        st.success("Teacher Added")
+        else:
 
-    st.subheader("Remove Teacher")
+            # check if teacher already exists
+            existing = users.find_one({"username": t_user, "role": "teacher"})
 
-    remove_user=st.text_input("Teacher Username",key="remove_teacher_user")
+            if existing:
+                st.error("Teacher already exists")
 
-    if st.button("Delete Teacher"):
+            else:
+                users.insert_one({
+                    "username": t_user,
+                    "password": t_pass,
+                    "role": "teacher"
+                })
 
-        users.delete_one({
-            "username":remove_user,
-            "role":"teacher"
-        })
+                st.success("Teacher Added")
+                st.rerun()
 
-        st.success("Teacher Removed")
+
+    # ---------------- TEACHER LIST ----------------
+
+    st.subheader("Teacher List")
+
+    teacher_list = list(users.find({"role": "teacher"}))
+
+    if len(teacher_list) == 0:
+        st.info("No teachers added yet")
+
+    else:
+
+        for teacher in teacher_list:
+
+            col1, col2 = st.columns([3,1])
+
+            with col1:
+                st.write(teacher["username"])
+
+            with col2:
+
+                if st.button("Delete", key=teacher["_id"]):
+
+                    users.delete_one({"_id": teacher["_id"]})
+                    st.success("Teacher Removed")
+                    st.rerun()
+
+
+    # ---------------- LOGOUT ----------------
 
     if st.button("Logout"):
-        st.session_state.page="home"
+        st.session_state.page = "home"
         st.rerun()
 
 
