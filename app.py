@@ -42,26 +42,21 @@ def navbar():
             st.session_state.page = "teacher_login"
             st.rerun()
 
-    st.markdown('</div>', unsafe_allow_html=True)
-
 
 navbar()
+
 
 # -------- TITLE --------
 st.markdown("<h1>CO-PO Attainment System</h1>", unsafe_allow_html=True)
 
 
-
 # -------- CENTER LOGO IMAGE --------
-
 logo_url = "https://fimt-ggsipu.org/images/flogo2025-1.jpg"
 
 col1, col2, col3 = st.columns([1,4,1])
 
 with col2:
     st.image(logo_url, width=450)
-
-st.markdown('</div>', unsafe_allow_html=True)
 
 
 # -------- ADMIN REGISTER --------
@@ -155,7 +150,16 @@ elif st.session_state.page == "teacher_login":
 # -------- ADMIN PANEL --------
 elif st.session_state.page == "admin_panel":
 
-    st.header("Admin Dashboard")
+    col1, col2 = st.columns([8,1])
+
+    with col1:
+        st.header("Admin Dashboard")
+
+    with col2:
+        if st.button("Logout"):
+            st.session_state.page = "home"
+            st.rerun()
+
 
     st.subheader("Create Teacher")
 
@@ -172,6 +176,7 @@ elif st.session_state.page == "admin_panel":
 
         st.success("Teacher Added")
         st.rerun()
+
 
     st.subheader("Teacher List")
 
@@ -201,7 +206,16 @@ elif st.session_state.page == "admin_panel":
 # -------- TEACHER PANEL --------
 elif st.session_state.page == "teacher_panel":
 
-    st.header("Teacher Dashboard")
+    col1, col2 = st.columns([8,1])
+
+    with col1:
+        st.header("Teacher Dashboard")
+
+    with col2:
+        if st.button("Logout"):
+            st.session_state.page = "home"
+            st.rerun()
+
 
     subject = st.text_input("Subject Name")
     code = st.text_input("Subject Code")
@@ -240,6 +254,7 @@ elif st.session_state.page == "teacher_panel":
         })
 
         st.success("Student Added")
+
 
     if st.button("Calculate Attainment"):
 
