@@ -1,6 +1,7 @@
 import pandas as pd
 from db import students
 
+
 def calculate_attainment(threshold, max_marks):
 
     data = list(students.find())
@@ -10,32 +11,34 @@ def calculate_attainment(threshold, max_marks):
     above = 0
     below = 0
 
-    result = []
+    rows = []
 
-    for i in data:
+    for s in data:
 
-        status = i.get("status","Present")
+        name = s.get("student", "")
+        total = s.get("total", 0)
+        status = s.get("status", "Present")
 
         if status == "Absent":
             absent += 1
-            continue
-
-        present += 1
-
-        total = i.get("total",0)
-
-        if total >= threshold:
-            above += 1
         else:
-            below += 1
+            present += 1
 
-        result.append({
-            "Student": i.get("student"),
+            if total >= threshold:
+                above += 1
+            else:
+                below += 1
+
+        rows.append({
+            "Student": name,
             "Total Marks": total,
             "Status": status
         })
 
-    percent = (above/present)*100 if present>0 else 0
+
+    df_students = pd.DataFrame(rows)
+
+    percent = (above/present)*100 if present else 0
 
     if percent >= 70:
         attainment = 3
@@ -46,7 +49,6 @@ def calculate_attainment(threshold, max_marks):
     else:
         attainment = 0
 
-    df = pd.DataFrame(result)
 
     summary = pd.DataFrame({
         "Parameter":[
@@ -62,14 +64,15 @@ def calculate_attainment(threshold, max_marks):
             absent,
             above,
             below,
-            percent,
+            round(percent,2),
             attainment
         ]
     })
 
-    with pd.ExcelWriter("CO_Attainment.xlsx", engine="openpyxl") as writer:
 
-        df.to_excel(writer, sheet_name="Student Data", index=False)
+    with pd.ExcelWriter("CO_Attainment.xlsx") as writer:
+        df_students.to_excel(writer, sheet_name="Student Data", index=False)
         summary.to_excel(writer, sheet_name="Attainment Summary", index=False)
 
-    return df, summary
+
+    return df_students, summary

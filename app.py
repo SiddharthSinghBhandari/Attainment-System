@@ -16,11 +16,14 @@ load_css()
 if "page" not in st.session_state:
     st.session_state.page = "home"
 
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+
 
 # -------- NAVBAR --------
 def navbar():
 
-    col1, col2, col3, col4 = st.columns(4, gap="large")
+    col1, col2, col3, col4 = st.columns(4)
 
     with col1:
         if st.button("Admin Register", use_container_width=True):
@@ -50,7 +53,7 @@ navbar()
 st.markdown("<h1>CO-PO Attainment System</h1>", unsafe_allow_html=True)
 
 
-# -------- CENTER LOGO IMAGE --------
+# -------- LOGO --------
 logo_url = "https://fimt-ggsipu.org/images/flogo2025-1.jpg"
 
 col1, col2, col3 = st.columns([1,4,1])
@@ -72,7 +75,11 @@ if st.session_state.page == "admin_register":
         if users.find_one({"role": "admin"}):
             st.error("Admin already exists")
 
+        elif username.strip()=="" or password.strip()=="":
+            st.error("Fill all fields")
+
         else:
+
             users.insert_one({
                 "username": username,
                 "password": password,
@@ -99,6 +106,7 @@ elif st.session_state.page == "admin_login":
         })
 
         if user:
+            st.session_state.logged_in = True
             st.session_state.page = "admin_panel"
             st.rerun()
         else:
@@ -115,13 +123,18 @@ elif st.session_state.page == "teacher_register":
 
     if st.button("Register Teacher"):
 
-        users.insert_one({
-            "username": username,
-            "password": password,
-            "role": "teacher"
-        })
+        if username.strip()=="" or password.strip()=="":
+            st.error("Fill all fields")
 
-        st.success("Teacher registered successfully")
+        else:
+
+            users.insert_one({
+                "username": username,
+                "password": password,
+                "role": "teacher"
+            })
+
+            st.success("Teacher registered successfully")
 
 
 # -------- TEACHER LOGIN --------
@@ -141,14 +154,17 @@ elif st.session_state.page == "teacher_login":
         })
 
         if user:
+
+            st.session_state.logged_in = True
             st.session_state.page = "teacher_panel"
             st.rerun()
+
         else:
             st.error("Invalid credentials")
 
 
 # -------- ADMIN PANEL --------
-elif st.session_state.page == "admin_panel":
+elif st.session_state.page == "admin_panel" and st.session_state.logged_in:
 
     col1, col2 = st.columns([8,1])
 
@@ -157,39 +173,45 @@ elif st.session_state.page == "admin_panel":
 
     with col2:
         if st.button("Logout"):
+            st.session_state.logged_in = False
             st.session_state.page = "home"
             st.rerun()
 
 
     st.subheader("Create Teacher")
 
-    t_user = st.text_input("Teacher Username", key="add_teacher")
+    t_user = st.text_input("Teacher Username")
     t_pass = st.text_input("Teacher Password", type="password")
 
     if st.button("Add Teacher"):
 
-        users.insert_one({
-            "username": t_user,
-            "password": t_pass,
-            "role": "teacher"
-        })
+        if t_user.strip()=="" or t_pass.strip()=="":
+            st.error("Fill all fields")
 
-        st.success("Teacher Added")
-        st.rerun()
+        else:
+
+            users.insert_one({
+                "username": t_user,
+                "password": t_pass,
+                "role": "teacher"
+            })
+
+            st.success("Teacher Added")
+            st.rerun()
 
 
     st.subheader("Teacher List")
 
-    teacher_list = list(users.find({"role": "teacher"}))
+    teacher_list = list(users.find({"role":"teacher"}))
 
-    if len(teacher_list) == 0:
+    if len(teacher_list)==0:
         st.info("No teachers available")
 
     else:
 
         for teacher in teacher_list:
 
-            col1, col2 = st.columns([3,1])
+            col1,col2 = st.columns([3,1])
 
             with col1:
                 st.write(teacher["username"])
@@ -198,13 +220,13 @@ elif st.session_state.page == "admin_panel":
 
                 if st.button("Delete", key=str(teacher["_id"])):
 
-                    users.delete_one({"_id": teacher["_id"]})
+                    users.delete_one({"_id":teacher["_id"]})
                     st.success("Teacher Removed")
                     st.rerun()
 
 
 # -------- TEACHER PANEL --------
-elif st.session_state.page == "teacher_panel":
+elif st.session_state.page == "teacher_panel" and st.session_state.logged_in:
 
     col1, col2 = st.columns([8,1])
 
@@ -213,6 +235,7 @@ elif st.session_state.page == "teacher_panel":
 
     with col2:
         if st.button("Logout"):
+            st.session_state.logged_in = False
             st.session_state.page = "home"
             st.rerun()
 
@@ -229,44 +252,55 @@ elif st.session_state.page == "teacher_panel":
     st.subheader("Student Details")
 
     name = st.text_input("Student Name")
-    status = st.selectbox("Attendance", ["Present", "Absent"])
+    status = st.selectbox("Attendance", ["Present","Absent"])
 
-    marks = []
+    marks=[]
 
     for i in range(int(co_no)):
         m = st.number_input(f"CO{i+1} Marks", min_value=0)
         marks.append(m)
 
-    total = sum(marks)
+    total=sum(marks)
+
 
     if st.button("Add Student"):
 
-        students.insert_one({
-            "student": name,
-            "subject": subject,
-            "code": code,
-            "total_students": total_students,
-            "max_marks": max_marks,
-            "threshold": threshold,
-            "co_marks": marks,
-            "total": total,
-            "status": status
-        })
+        if name.strip()=="":
+            st.error("Enter student name")
 
-        st.success("Student Added")
+        elif subject.strip()=="" or code.strip()=="":
+            st.error("Enter subject name and code")
+
+        else:
+
+            students.insert_one({
+                "student":name,
+                "subject":subject,
+                "code":code,
+                "total_students":total_students,
+                "max_marks":max_marks,
+                "threshold":threshold,
+                "co_marks":marks,
+                "total":total,
+                "status":status
+            })
+
+            st.success("Student Added Successfully")
 
 
     if st.button("Calculate Attainment"):
 
-        df, summary = calculate_attainment(threshold, max_marks)
+        df, summary = calculate_attainment(threshold,max_marks)
 
         st.write(summary)
 
-        fig, ax = plt.subplots()
+        fig,ax = plt.subplots()
         ax.hist(df["Total Marks"])
+
         st.pyplot(fig)
 
-        with open("CO_Attainment.xlsx", "rb") as f:
+        with open("CO_Attainment.xlsx","rb") as f:
+
             st.download_button(
                 "Download Excel",
                 f,
