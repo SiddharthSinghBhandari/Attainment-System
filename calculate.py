@@ -1,33 +1,54 @@
 import pandas as pd
 from db import students
+from openpyxl import load_workbook
+
+
+def write_safe(ws, row, col, value):
+    """
+    Write to cell even if the position is inside a merged range.
+    """
+    cell = ws.cell(row=row, column=col)
+
+    for merged in ws.merged_cells.ranges:
+        if cell.coordinate in merged:
+            row = merged.min_row
+            col = merged.min_col
+            break
+
+    ws.cell(row=row, column=col).value = value
 
 
 def calculate_attainment(threshold, max_marks):
 
+    wb = load_workbook("template.xlsx")
+    ws = wb.active
+
     data = list(students.find())
 
-    present = 0
-    absent = 0
-    above = 0
-    below = 0
-
+    start_row = 10
     rows = []
 
-    for s in data:
+    for i, s in enumerate(data):
+
+        row = start_row + i
 
         name = s.get("student", "")
-        total = s.get("total", 0)
         status = s.get("status", "Present")
+        co = s.get("co_marks", [0, 0, 0])
 
-        if status == "Absent":
-            absent += 1
-        else:
-            present += 1
+        co1 = co[0] if len(co) > 0 else 0
+        co2 = co[1] if len(co) > 1 else 0
+        co3 = co[2] if len(co) > 2 else 0
 
-            if total >= threshold:
-                above += 1
-            else:
-                below += 1
+        total = co1 + co2 + co3
+
+        # write safely even if cells are merged
+        write_safe(ws, row, 1, i + 1)     # Sr No
+        write_safe(ws, row, 3, name)      # Name
+        write_safe(ws, row, 5, total)     # Max Marks
+        write_safe(ws, row, 6, co1)       # CO1
+        write_safe(ws, row, 7, co2)       # CO2
+        write_safe(ws, row, 8, co3)       # CO3
 
         rows.append({
             "Student": name,
@@ -35,44 +56,13 @@ def calculate_attainment(threshold, max_marks):
             "Status": status
         })
 
+    wb.save("CO_Attainment.xlsx")
 
-    df_students = pd.DataFrame(rows)
-
-    percent = (above/present)*100 if present else 0
-
-    if percent >= 70:
-        attainment = 3
-    elif percent >= 60:
-        attainment = 2
-    elif percent >= 50:
-        attainment = 1
-    else:
-        attainment = 0
-
+    df = pd.DataFrame(rows)
 
     summary = pd.DataFrame({
-        "Parameter":[
-            "Present Students",
-            "Absent Students",
-            "Students Above Threshold",
-            "Students Below Threshold",
-            "% Students Above Threshold",
-            "CO Attainment Level"
-        ],
-        "Value":[
-            present,
-            absent,
-            above,
-            below,
-            round(percent,2),
-            attainment
-        ]
+        "Parameter": ["Students"],
+        "Value": [len(rows)]
     })
 
-
-    with pd.ExcelWriter("CO_Attainment.xlsx") as writer:
-        df_students.to_excel(writer, sheet_name="Student Data", index=False)
-        summary.to_excel(writer, sheet_name="Attainment Summary", index=False)
-
-
-    return df_students, summary
+    return df, summary
