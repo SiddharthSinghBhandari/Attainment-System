@@ -53,7 +53,7 @@ input {
 }
 /* Background image */
 .stApp {
-    background: url("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTtbw_-InsYjJWfaHV-zv_bdBha9oclWwsZUQ&s");
+    background: url("");
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
@@ -67,7 +67,7 @@ input {
     left: 0;
     width: 100%;
     height: 100%;
-    background: url("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTtbw_-InsYjJWfaHV-zv_bdBha9oclWwsZUQ&s");
+    background: url("");
     background-size: cover;
     background-position: center;
     filter: blur(8px);
