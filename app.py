@@ -1,6 +1,7 @@
 import streamlit as st
 import matplotlib.pyplot as plt
-from db import students, users
+import pandas as pd
+from db import students, users, uploads
 from calculate import calculate_attainment
 
 
@@ -156,6 +157,7 @@ elif st.session_state.page == "teacher_login":
         if user:
 
             st.session_state.logged_in = True
+            st.session_state.teacher = username
             st.session_state.page = "teacher_panel"
             st.rerun()
 
@@ -306,3 +308,41 @@ elif st.session_state.page == "teacher_panel" and st.session_state.logged_in:
                 f,
                 file_name="CO_Attainment.xlsx"
             )
+
+
+    # -------- OPTIONAL FILE UPLOAD FEATURE --------
+
+    st.divider()
+    st.subheader("Optional: Upload Excel/CSV File")
+
+    uploaded_file = st.file_uploader(
+        "Upload Excel or CSV",
+        type=["xlsx","csv"]
+    )
+
+    if uploaded_file:
+
+        try:
+
+            if uploaded_file.name.endswith(".csv"):
+                df = pd.read_csv(uploaded_file)
+            else:
+                df = pd.read_excel(uploaded_file)
+
+            st.write("Preview of Uploaded File")
+            st.dataframe(df)
+
+            if st.button("Save File Data to MongoDB"):
+
+                data = df.to_dict(orient="records")
+
+                uploads.insert_one({
+                    "teacher": st.session_state.teacher,
+                    "file_name": uploaded_file.name,
+                    "data": data
+                })
+
+                st.success("File stored successfully in MongoDB Atlas")
+
+        except Exception as e:
+            st.error(f"Error reading file: {e}")

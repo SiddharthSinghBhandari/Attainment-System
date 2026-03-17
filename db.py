@@ -9,3 +9,6 @@ db = client["attainment_system"]
 
 students = db["students"]
 users = db["users"]
+
+# NEW collection for uploaded files
+uploads = db["teacher_uploads"]
