@@ -46,7 +46,6 @@ def navbar():
             st.session_state.page = "teacher_login"
             st.rerun()
 
-
 navbar()
 
 
@@ -114,6 +113,44 @@ elif st.session_state.page == "admin_login":
             st.error("Invalid credentials")
 
 
+# -------- ADMIN PANEL --------
+elif st.session_state.page == "admin_panel" and st.session_state.logged_in:
+
+    col1, col2 = st.columns([8,1])
+
+    with col1:
+        st.header("Admin Dashboard")
+
+    with col2:
+        if st.button("Logout"):
+            st.session_state.logged_in = False
+            st.session_state.page = "home"
+            st.rerun()
+
+    st.subheader("Registered Teachers")
+
+    teachers = list(users.find({"role":"teacher"}))
+
+    if teachers:
+
+        for t in teachers:
+
+            col1,col2 = st.columns([6,1])
+
+            with col1:
+                st.write(f"👨‍🏫 {t['username']}")
+
+            with col2:
+                if st.button("Delete", key=str(t["_id"])):
+
+                    users.delete_one({"_id":t["_id"]})
+                    st.success("Teacher deleted")
+                    st.rerun()
+
+    else:
+        st.info("No teachers registered")
+
+
 # -------- TEACHER REGISTER --------
 elif st.session_state.page == "teacher_register":
 
@@ -165,68 +202,6 @@ elif st.session_state.page == "teacher_login":
             st.error("Invalid credentials")
 
 
-# -------- ADMIN PANEL --------
-elif st.session_state.page == "admin_panel" and st.session_state.logged_in:
-
-    col1, col2 = st.columns([8,1])
-
-    with col1:
-        st.header("Admin Dashboard")
-
-    with col2:
-        if st.button("Logout"):
-            st.session_state.logged_in = False
-            st.session_state.page = "home"
-            st.rerun()
-
-
-    st.subheader("Create Teacher")
-
-    t_user = st.text_input("Teacher Username")
-    t_pass = st.text_input("Teacher Password", type="password")
-
-    if st.button("Add Teacher"):
-
-        if t_user.strip()=="" or t_pass.strip()=="":
-            st.error("Fill all fields")
-
-        else:
-
-            users.insert_one({
-                "username": t_user,
-                "password": t_pass,
-                "role": "teacher"
-            })
-
-            st.success("Teacher Added")
-            st.rerun()
-
-
-    st.subheader("Teacher List")
-
-    teacher_list = list(users.find({"role":"teacher"}))
-
-    if len(teacher_list)==0:
-        st.info("No teachers available")
-
-    else:
-
-        for teacher in teacher_list:
-
-            col1,col2 = st.columns([3,1])
-
-            with col1:
-                st.write(teacher["username"])
-
-            with col2:
-
-                if st.button("Delete", key=str(teacher["_id"])):
-
-                    users.delete_one({"_id":teacher["_id"]})
-                    st.success("Teacher Removed")
-                    st.rerun()
-
-
 # -------- TEACHER PANEL --------
 elif st.session_state.page == "teacher_panel" and st.session_state.logged_in:
 
@@ -267,28 +242,25 @@ elif st.session_state.page == "teacher_panel" and st.session_state.logged_in:
 
     if st.button("Add Student"):
 
-        if name.strip()=="":
-            st.error("Enter student name")
-
-        elif subject.strip()=="" or code.strip()=="":
-            st.error("Enter subject name and code")
+        if name.strip()=="" or subject.strip()=="" or code.strip()=="":
+            st.error("Student Name, Subject Name and Subject Code are mandatory")
 
         else:
 
             students.insert_one({
-                "student":name,
-                "subject":subject,
-                "code":code,
-                "total_students":total_students,
-                "max_marks":max_marks,
-                "threshold":threshold,
-                "co_marks":marks,
-                "total":total,
-                "status":status
+                "student": name,
+                "teacher": st.session_state.teacher,
+                "subject": subject,
+                "code": code,
+                "total_students": total_students,
+                "max_marks": max_marks,
+                "threshold": threshold,
+                "co_marks": marks,
+                "total": total,
+                "status": status
             })
 
             st.success("Student Added Successfully")
-
 
     if st.button("Calculate Attainment"):
 
@@ -310,17 +282,17 @@ elif st.session_state.page == "teacher_panel" and st.session_state.logged_in:
             )
 
 
-    # -------- OPTIONAL FILE UPLOAD FEATURE --------
+    # -------- FILE UPLOAD --------
 
     st.divider()
-    st.subheader("Optional: Upload Excel/CSV File")
+    st.subheader("Upload Excel/CSV Student Data")
 
     uploaded_file = st.file_uploader(
         "Upload Excel or CSV",
         type=["xlsx","csv"]
     )
 
-    if uploaded_file:
+    if uploaded_file is not None:
 
         try:
 
@@ -336,13 +308,14 @@ elif st.session_state.page == "teacher_panel" and st.session_state.logged_in:
 
                 data = df.to_dict(orient="records")
 
-                uploads.insert_one({
-                    "teacher": st.session_state.teacher,
-                    "file_name": uploaded_file.name,
-                    "data": data
-                })
+                for row in data:
 
-                st.success("File stored successfully in MongoDB Atlas")
+                    row["teacher"] = st.session_state.teacher
+                    row["file_name"] = uploaded_file.name
+
+                    uploads.insert_one(row)
+
+                st.success("All students saved separately in MongoDB")
 
         except Exception as e:
             st.error(f"Error reading file: {e}")

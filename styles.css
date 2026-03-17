@@ -81,3 +81,117 @@ input {
     border-radius: 12px;
 }
 
+/* -------- FORCE DARK BACKGROUND -------- */
+
+html, body, .stApp {
+    background: #0E1117 !important;
+    color: #E5E7EB !important;
+}
+
+
+/* -------- MAIN CONTENT BOX -------- */
+
+.block-container {
+
+    background: rgba(15,23,42,0.85);
+    border-radius: 16px;
+    padding: 40px;
+
+    box-shadow: 0 0 30px rgba(0,0,0,0.6);
+}
+
+
+/* -------- TITLE -------- */
+
+h1 {
+
+    text-align: center;
+    font-size: 44px;
+    color: #F8FAFC;
+    font-weight: 700;
+}
+
+
+/* -------- NAVBAR BUTTONS -------- */
+
+.stButton > button {
+
+    width: 100%;
+    padding: 14px;
+
+    border-radius: 12px;
+    border: none;
+
+    font-size: 16px;
+    font-weight: 600;
+
+    background: linear-gradient(135deg,#2563EB,#4F46E5);
+    color: white;
+
+    transition: all 0.25s ease;
+}
+
+
+/* -------- BUTTON HOVER -------- */
+
+.stButton > button:hover {
+
+    transform: translateY(-2px);
+    background: linear-gradient(135deg,#1D4ED8,#4338CA);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+}
+
+
+/* -------- INPUT FIELDS -------- */
+
+input {
+
+    background: #1E293B !important;
+    color: white !important;
+
+    border-radius: 8px !important;
+}
+
+
+/* -------- SELECT BOX -------- */
+
+div[data-baseweb="select"] {
+
+    background: #1E293B !important;
+    border-radius: 8px !important;
+}
+
+
+/* -------- FILE UPLOADER -------- */
+
+section[data-testid="stFileUploader"] {
+
+    background: rgba(255,255,255,0.05);
+    border-radius: 12px;
+    padding: 20px;
+}
+
+
+/* -------- DATAFRAME -------- */
+
+.stDataFrame {
+
+    background: #020617;
+    border-radius: 12px;
+}
+
+
+/* -------- DIVIDER -------- */
+
+hr {
+
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+
+/* -------- SUCCESS / ERROR -------- */
+
+.stAlert {
+
+    border-radius: 10px;
+}
