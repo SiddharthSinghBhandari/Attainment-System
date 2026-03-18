@@ -1,5 +1,4 @@
 import streamlit as st
-st.set_page_config(layout="wide")
 import matplotlib.pyplot as plt
 import pandas as pd
 from db import students, users, uploads
