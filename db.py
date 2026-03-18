@@ -1,7 +1,7 @@
 from pymongo import MongoClient
-import streamlit as st
+import os
 
-MONGO_URI = st.secrets["mongo_uri"]
+MONGO_URI = os.environ.get("MONGO_URI")
 
 client = MongoClient(MONGO_URI)
 
@@ -9,6 +9,4 @@ db = client["attainment_system"]
 
 students = db["students"]
 users = db["users"]
-
-# NEW collection for uploaded files
 uploads = db["teacher_uploads"]
