@@ -1,16 +1,15 @@
-# Streamlit secrets (MongoDB URI etc.)
-.streamlit/secrets.toml
-
-# Python cache files
 __pycache__/
 *.pyc
+venv/
+.env/
 
-# VS Code settings
-.vscode/
+# Secrets
+secrets.toml
+.streamlit/secrets.toml
 
-# Environment variables
-.env
-.env.*
+# Files
+*.xlsx
 
-# Generated Excel output
-CO_Attainment.xlsx
+# OS
+.DS_Store
+Thumbs.db
