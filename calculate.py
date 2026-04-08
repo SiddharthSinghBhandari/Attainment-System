@@ -67,7 +67,12 @@ def calculate_attainment(threshold, max_marks):
         co3_per = (co3 / 6 * 100) if co3 else 0
 
         # Pass / Fail logic
-        result = "Pass" if total >= threshold else "Fail"
+        status = s.get("status") or s.get("Attendance", "Present")
+
+        if status == "Absent":
+            result = "Absent"
+        else:
+            result = "Pass" if total >= threshold else "Fail"
         if result == "Pass":
             passed_count += 1
 

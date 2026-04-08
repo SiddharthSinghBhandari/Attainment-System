@@ -5,6 +5,9 @@ from db import students, users, uploads
 from calculate import calculate_attainment
 import os
 import time   # ✅ ADDED
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment
+from openpyxl.utils import get_column_letter
 
 
 # ---------------- LOAD CUSTOM CSS ----------------
@@ -245,7 +248,7 @@ elif st.session_state.page == "teacher_panel" and st.session_state.logged_in:
     if use_weight:
         weight_input = st.number_input("Weight (%)", min_value=1, max_value=100, value=100)
 
-    # -------- FILE UPLOAD --------
+                 # -------- FILE UPLOAD --------
     st.subheader("📂 Upload Excel/CSV")
     uploaded_file = st.file_uploader("Upload student file", type=["xlsx", "csv"])
 
@@ -257,62 +260,140 @@ elif st.session_state.page == "teacher_panel" and st.session_state.logged_in:
 
         st.dataframe(df_upload)
 
+        # session flag
+        if "data_saved" not in st.session_state:
+            st.session_state.data_saved = False
+
         if st.button("Save Uploaded Data"):
             for row in df_upload.to_dict(orient="records"):
+
                 row["teacher"] = st.session_state.teacher
+
+                # attendance fix
+                if "Attendance" in row:
+                    row["status"] = str(row["Attendance"]).strip()
+                else:
+                    row["status"] = "Present"
+
+                # max marks logic (default + custom support)
+                if "Max Marks" in row and str(row["Max Marks"]).strip() != "":
+                    try:
+                        row["Max Marks"] = float(row["Max Marks"])
+                    except:
+                        row["Max Marks"] = max_marks_input
+                else:
+                    row["Max Marks"] = max_marks_input
+
                 uploads.insert_one(row)
+
+            st.session_state.data_saved = True
+
+        if st.session_state.data_saved:
             st.success("Data saved successfully")
+            st.session_state.data_saved = False
+
+
+        # -------- EDIT MAX MARKS IN UI --------
+    st.subheader("✏️ Edit Max Marks Of Students")
+
+    # ✅ FIX: ensure teacher exists
+    if "teacher" not in st.session_state:
+        st.session_state.teacher = None
+
+    data = []
+    if st.session_state.teacher:
+        data = list(students.find({"teacher": st.session_state.teacher})) + \
+               list(uploads.find({"teacher": st.session_state.teacher}))
+
+    if data:
+        names = []
+        for d in data:
+            name = d.get("student") or d.get("Student Name", "Unknown")
+            names.append(name)
+
+        selected_student = st.selectbox("Select Student", names)
+
+        new_max = st.number_input("New Max Marks", min_value=0, value=0)
+
+        if st.button("Update Max Marks"):
+
+            students.update_many(
+                {"teacher": st.session_state.teacher, "student": selected_student},
+                {"$set": {"Max Marks": new_max}}
+            )
+
+            uploads.update_many(
+                {"teacher": st.session_state.teacher, "student": selected_student},
+                {"$set": {"Max Marks": new_max}}
+            )
+
+            st.success(f"Updated Max Marks for {selected_student}")
+
+    else:
+        st.info("No students available to edit")
+
 
     # -------- STUDENT ENTRY --------
     st.subheader("Student Details")
 
-    with st.form(f"student_form_{st.session_state.reset_key}"):
+    box = st.container()
 
-        subject = st.text_input("Subject Name")
-        code = st.text_input("Subject Code")
-        threshold = st.number_input("Threshold Marks", min_value=0, value=0)
+    with box:
 
-        co_no = st.number_input("Number of CO", min_value=0, max_value=6)
+        # -------- NUMBER OF CO --------
+        co_no = st.number_input("Number of CO", min_value=0, max_value=6, step=1)
 
-        name = st.text_input("Student Name")
-        status = st.selectbox("Attendance", ["Present", "Absent"])
+        # -------- CO INPUT FIELDS --------
+        co_marks_inputs = []
+        for i in range(int(co_no)):
+            co_marks_inputs.append(
+                st.text_input(f"CO{i+1} Marks", key=f"co_{i}_{st.session_state.reset_key}")
+            )
 
-        marks = [st.text_input(f"CO{i+1} Marks") for i in range(int(co_no))]
+        # -------- FORM --------
+        with st.form(f"student_form_{st.session_state.reset_key}"):
 
-        submit_student = st.form_submit_button("Add Student")
+            subject = st.text_input("Subject Name")
+            code = st.text_input("Subject Code")
+            threshold = st.number_input("Threshold Marks", min_value=0, value=0)
 
-        if submit_student:
+            name = st.text_input("Student Name")
+            status = st.selectbox("Attendance", ["Present", "Absent"])
 
-            if name.strip() == "" or subject.strip() == "" or code.strip() == "":
-                st.error("❌ Student Name, Subject Name and Subject Code are required")
+            submit_student = st.form_submit_button("Add Student")
 
-            else:
-                marks_int = [int(x) if x.isdigit() else 0 for x in marks]
-                total = sum(marks_int)
+            if submit_student:
 
-                if use_weight:
-                    final_total = (total / max_marks_input) * weight_input if max_marks_input > 0 else 0
+                if name.strip() == "" or subject.strip() == "" or code.strip() == "":
+                    st.error("❌ Student Name, Subject Name and Subject Code are required")
+
                 else:
-                    final_total = total
+                    marks_int = [int(x) if x.isdigit() else 0 for x in co_marks_inputs]
+                    total = sum(marks_int)
 
-                students.insert_one({
-                    "student": name,
-                    "teacher": st.session_state.teacher,
-                    "subject": subject,
-                    "code": code,
-                    "threshold": int(threshold),
-                    "co_marks": marks_int,
-                    "total": total,
-                    "final_total": final_total,
-                    "status": status
-                })
+                    if use_weight:
+                        final_total = (total / max_marks_input) * weight_input if max_marks_input > 0 else 0
+                    else:
+                        final_total = total
 
-                st.success("✅ Student Added Successfully")
-                time.sleep(1)
-                st.session_state.reset_key += 1
-                st.rerun()
+                    students.insert_one({
+                        "student": name,
+                        "teacher": st.session_state.teacher,
+                        "subject": subject,
+                        "code": code,
+                        "threshold": int(threshold),
+                        "co_marks": marks_int,
+                        "total": total,
+                        "final_total": final_total,
+                        "status": status
+                    })
 
-    # -------- BUTTON ALIGNMENT FIX --------
+                    st.success("✅ Student Added Successfully")
+
+                    time.sleep(1)
+                    st.session_state.reset_key += 1
+                    st.rerun()
+                # -------- BUTTON ALIGNMENT FIX --------
     st.subheader("📥 Download My Data (Excel)")
 
     col1, col2 = st.columns(2)
@@ -334,32 +415,98 @@ elif st.session_state.page == "teacher_panel" and st.session_state.logged_in:
         if not all_data:
             st.warning("⚠️ No data available to download")
         else:
+
+            # -------- DETECT MAX CO --------
+            max_co = 0
+            for d in all_data:
+                if "co_marks" in d:
+                    max_co = max(max_co, len(d.get("co_marks", [])))
+                else:
+                    co_keys = [k for k in d.keys() if str(k).startswith("CO")]
+                    max_co = max(max_co, len(co_keys))
+
+            co_headers = [f"CO{i+1}" for i in range(max_co)]
+
             formatted_data = []
 
             for d in all_data:
-                co_marks = d.get("co_marks", [])
+
+                # CO extraction
+                if "co_marks" in d:
+                    co_marks = d.get("co_marks", [])
+                else:
+                    co_marks = [d.get(f"CO{i+1}", 0) for i in range(max_co)]
+
+                obtained = d.get("total", 0)
+                max_marks = d.get("Max Marks", max_marks_input)
+
+                # -------- ATTAINMENT % --------
+                attainment_percent = min((obtained / max_marks * 100), 100) if max_marks > 0 else 0
+
+                # -------- ATTAINMENT LEVEL --------
+                if attainment_percent >= 70:
+                    attainment_level = 3
+                elif attainment_percent >= 60:
+                    attainment_level = 2
+                elif attainment_percent >= 50:
+                    attainment_level = 1
+                else:
+                    attainment_level = 0
 
                 row = {
                     "Student Name": d.get("student", ""),
                     "Subject Name": d.get("subject", ""),
                     "Subject Code": d.get("code", ""),
-                    "Attendance": d.get("status", ""),
-                    "Max Marks": max_marks_input,
-                    "Obtained Marks": d.get("total", 0),
+                    "Attendance": d.get("status") or d.get("Attendance", "Present"),
+                    "Max Marks": max_marks,
+                    "Obtained Marks": obtained,
                     "Final Marks": d.get("final_total", 0),
+                    "Threshold": d.get("threshold", 0),
+                    "Attainment %": round(attainment_percent, 2),
+                    "Attainment Level": attainment_level
                 }
 
-                for i, mark in enumerate(co_marks):
-                    row[f"CO{i+1}"] = mark
+                # -------- ADD CO VALUES --------
+                for i in range(max_co):
+                    row[f"CO{i+1}"] = co_marks[i] if i < len(co_marks) else 0
 
                 formatted_data.append(row)
 
-            df_download = pd.DataFrame(formatted_data)
-
             file_name = f"{st.session_state.teacher}_students_data.xlsx"
 
-            with pd.ExcelWriter(file_name, engine='openpyxl') as writer:
-                df_download.to_excel(writer, index=False)
+            wb = Workbook()
+            ws = wb.active
+            ws.title = "Student Data"
+
+            headers = [
+                "Student Name", "Subject Name", "Subject Code",
+                "Attendance", "Max Marks", "Obtained Marks", "Final Marks",
+                "Threshold", "Attainment %", "Attainment Level"
+            ] + co_headers
+
+            # -------- HEADER STYLE --------
+            for col_num, header in enumerate(headers, 1):
+                cell = ws.cell(row=1, column=col_num, value=header)
+                cell.font = Font(bold=True)
+                cell.alignment = Alignment(horizontal="center")
+
+            # -------- DATA --------
+            for row_num, row_data in enumerate(formatted_data, start=2):
+                for col_num, key in enumerate(headers, 1):
+                    ws.cell(row=row_num, column=col_num, value=row_data.get(key, ""))
+
+            # -------- AUTO WIDTH --------
+            for col in ws.columns:
+                max_length = 0
+                col_letter = get_column_letter(col[0].column)
+
+                for cell in col:
+                    if cell.value:
+                        max_length = max(max_length, len(str(cell.value)))
+
+                ws.column_dimensions[col_letter].width = max_length + 3
+
+            wb.save(file_name)
 
             with open(file_name, "rb") as f:
                 st.download_button("⬇️ Download Excel File", f, file_name=file_name)
@@ -388,7 +535,6 @@ elif st.session_state.page == "teacher_panel" and st.session_state.logged_in:
         fig, ax = plt.subplots()
         ax.bar(["Passed", "Failed"], [passed, failed])
         st.pyplot(fig)
-
 
 # ---------------- FOOTER ----------------
 show_footer()
