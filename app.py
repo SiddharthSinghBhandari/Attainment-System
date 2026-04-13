@@ -11,6 +11,73 @@ from openpyxl.styles import Font, Alignment
 from openpyxl.utils import get_column_letter
 
 
+# ---------------- TEMPLATE BUILDER ----------------
+def _build_template():
+    """Generate the student data entry template as a BytesIO object."""
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, Alignment, PatternFill, Border, Side, Protection
+
+    NUM_STUDENTS = 30
+    BLUE_HDR = "1E3A5F"
+    ALT1     = "EBF5FB"
+    ALT2     = "FFFFFF"
+
+    def S(): return Side(style="thin")
+    def bdr(): return Border(left=S(), right=S(), top=S(), bottom=S())
+
+    def c(ws, r, col, value=None, bold=False, size=11, h="center", v="center",
+          bg=None, locked=True, color="000000"):
+        cl = ws.cell(row=r, column=col, value=value)
+        cl.font       = Font(name="Arial", bold=bold, size=size, color=color)
+        cl.alignment  = Alignment(horizontal=h, vertical=v)
+        if bg: cl.fill = PatternFill("solid", fgColor=bg)
+        cl.border     = bdr()
+        cl.protection = Protection(locked=locked)
+        return cl
+
+    def m(ws, r1, c1, r2, c2):
+        ws.merge_cells(start_row=r1, start_column=c1, end_row=r2, end_column=c2)
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Student Data"
+
+    for col, w in zip("ABCDEFG", [6, 14, 26, 8, 12, 12, 12]):
+        ws.column_dimensions[col].width = w
+
+    # Row 1: Headers
+    ws.row_dimensions[1].height = 22
+    for c1, c2, label in [
+        (1,1,"Sr.No"),(2,2,"Reg No"),(3,4,"Student Name"),
+        (5,5,"CO1 Marks"),(6,6,"CO2 Marks"),(7,7,"CO3 Marks")
+    ]:
+        if c1 != c2: m(ws, 1, c1, 1, c2)
+        c(ws, 1, c1, label, bold=True, size=11, bg=BLUE_HDR, color="FFFFFF")
+
+    # Student rows
+    for idx in range(NUM_STUDENTS):
+        r   = 2 + idx
+        alt = ALT1 if idx % 2 == 0 else ALT2
+        ws.row_dimensions[r].height = 17
+        c(ws, r, 1, idx+1, size=10, bg=alt)
+        c(ws, r, 2, None,  size=10, bg=ALT2, locked=False, h="center")
+        m(ws, r, 3, r, 4)
+        c(ws, r, 3, None,  size=10, bg=ALT2, locked=False, h="left")
+        c(ws, r, 5, None,  size=10, bg=ALT2, locked=False)
+        c(ws, r, 6, None,  size=10, bg=ALT2, locked=False)
+        c(ws, r, 7, None,  size=10, bg=ALT2, locked=False)
+
+    ws.freeze_panes = "A2"
+    ws.protection.sheet = True
+    ws.protection.password = ""
+    ws.protection.enable()
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return buf
+
+
 # ---------------- LOAD CUSTOM CSS ----------------
 def load_css():
     """Load external CSS file and hide default Streamlit UI elements"""
@@ -234,10 +301,13 @@ elif st.session_state.page == "teacher_panel" and st.session_state.logged_in:
         st.rerun()
 
     # -------- TEMPLATE DOWNLOAD --------
-    st.subheader("Download Template")
-    if os.path.exists("Template.xlsx"):
-        with open("Template.xlsx", "rb") as f:
-            st.download_button("Download Template", f, file_name="Template.xlsx")
+    st.subheader("📥 Download Template")
+    st.download_button(
+        "⬇️ Download Student Data Template",
+        data=_build_template(),
+        file_name="Student_Data_Template.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
 
     # -------- CLASS CONFIGURATION --------
     st.subheader("📊 Class Configuration")
