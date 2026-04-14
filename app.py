@@ -147,7 +147,7 @@ if st.session_state.just_logged_in:
 
 
 # ---------------- APP TITLE ----------------
-st.markdown("<h1> Attainment System</h1>", unsafe_allow_html=True)
+st.title("Attainment System", anchor=False)
 
 
 # ---------------- LOGO DISPLAY ----------------
@@ -160,7 +160,7 @@ with col2:
 # ---------------- ADMIN REGISTER ----------------
 if st.session_state.page == "admin_register":
 
-    st.header("Create Admin Account")
+    st.header("Create Admin Account", anchor=False)
 
     with st.form("admin_register_form"):
         username = st.text_input("Admin Username")
@@ -185,7 +185,7 @@ if st.session_state.page == "admin_register":
 # ---------------- ADMIN LOGIN ----------------
 elif st.session_state.page == "admin_login":
 
-    st.header("Admin Login")
+    st.header("Admin Login", anchor=False)
 
     with st.form("admin_login_form"):
         username = st.text_input("Username")
@@ -212,14 +212,14 @@ elif st.session_state.page == "admin_login":
 # ---------------- ADMIN DASHBOARD ----------------
 elif st.session_state.page == "admin_panel" and st.session_state.logged_in:
 
-    st.header("Admin Dashboard")
+    st.header("Admin Dashboard", anchor=False)
 
     if st.button("Logout"):
         st.session_state.logged_in = False
         st.session_state.page = "home"
         st.rerun()
 
-    st.subheader("Registered Teachers")
+    st.subheader("Registered Teachers", anchor=False)
 
     teachers = list(users.find({"role": "teacher"}))
 
@@ -242,7 +242,7 @@ elif st.session_state.page == "admin_panel" and st.session_state.logged_in:
 # ---------------- TEACHER REGISTER ----------------
 elif st.session_state.page == "teacher_register":
 
-    st.header("Create Teacher Account")
+    st.header("Create Teacher Account", anchor=False)
 
     with st.form("teacher_register_form"):
         username = st.text_input("Teacher Username")
@@ -265,7 +265,7 @@ elif st.session_state.page == "teacher_register":
 # ---------------- TEACHER LOGIN ----------------
 elif st.session_state.page == "teacher_login":
 
-    st.header("Teacher Login")
+    st.header("Teacher Login", anchor=False)
 
     with st.form("teacher_login_form"):
         username = st.text_input("Username")
@@ -293,7 +293,7 @@ elif st.session_state.page == "teacher_login":
 # ---------------- TEACHER DASHBOARD ----------------
 elif st.session_state.page == "teacher_panel" and st.session_state.logged_in:
 
-    st.header("Teacher Dashboard")
+    st.header("Teacher Dashboard", anchor=False)
 
     if st.button("Logout"):
         st.session_state.logged_in = False
@@ -301,7 +301,7 @@ elif st.session_state.page == "teacher_panel" and st.session_state.logged_in:
         st.rerun()
 
     # -------- TEMPLATE DOWNLOAD --------
-    st.subheader("📥 Download Template")
+    st.subheader("📥 Download Template", anchor=False)
     st.download_button(
         "⬇️ Download Student Data Template",
         data=_build_template(),
@@ -310,14 +310,14 @@ elif st.session_state.page == "teacher_panel" and st.session_state.logged_in:
     )
 
     # -------- CLASS CONFIGURATION --------
-    st.subheader("📊 Class Configuration")
+    st.subheader("📊 Class Configuration", anchor=False)
     total_students_input = st.number_input("Total Students", min_value=1, value=1)
     max_marks_input = st.number_input("Maximum Marks (Total)", min_value=1, value=15)
 
 
 
     # -------- THRESHOLD --------
-    st.subheader("🎯 Threshold & CO Marks Distribution")
+    st.subheader("🎯 Threshold & CO Marks Distribution", anchor=False)
     threshold_global = st.number_input(
         "Threshold % (students scoring above this are counted as passed)",
         min_value=0, max_value=100, value=50,
@@ -349,7 +349,7 @@ elif st.session_state.page == "teacher_panel" and st.session_state.logged_in:
         st.success(f"✅ CO marks distribution: {' + '.join(str(v) for v in co_maxes_input)} = {co_sum}")
 
     # -------- COURSE / INSTITUTE DETAILS --------
-    st.subheader("🏫 Course & Institute Details (for Excel Report)")
+    st.subheader("🏫 Course & Institute Details")
     col_a, col_b = st.columns(2)
     with col_a:
         university_name = st.text_input("University Name", value="CT UNIVERSITY")
@@ -362,7 +362,7 @@ elif st.session_state.page == "teacher_panel" and st.session_state.logged_in:
     exam_label_val  = st.text_input("Exam Label", value="Mid Term Examination")
 
                  # -------- FILE UPLOAD --------
-    st.subheader("📂 Upload Excel/CSV")
+    st.subheader("📂 Upload Excel/CSV", anchor=False)
     uploaded_file = st.file_uploader("Upload student file", type=["xlsx", "csv"])
 
     if uploaded_file is not None:
@@ -410,7 +410,7 @@ elif st.session_state.page == "teacher_panel" and st.session_state.logged_in:
 
 
     # -------- STUDENT ENTRY --------
-    st.subheader("Student Details")
+    st.subheader("Student Details", anchor=False)
 
     box = st.container()
 
@@ -467,7 +467,7 @@ elif st.session_state.page == "teacher_panel" and st.session_state.logged_in:
                     st.session_state.reset_key += 1
                     st.rerun()
                 # -------- BUTTON ALIGNMENT FIX --------
-    st.subheader("📥 Download My Data (Excel)")
+    st.subheader("📥 Download My Data")
 
     col1, col2 = st.columns(2)
 
@@ -661,7 +661,7 @@ elif st.session_state.page == "teacher_panel" and st.session_state.logged_in:
 
 
         # ── CHART 1: Pass/Fail bar chart ──────────────────────────────────────
-        st.subheader("📊 Attainment Overview")
+        st.subheader("📊 Attainment Overview", anchor=False)
         col_c1, col_c2, col_c3, col_c4 = st.columns(4)
         col_c1.metric("✅ Passed",  passed)
         col_c2.metric("❌ Failed",  failed)
