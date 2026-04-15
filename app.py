@@ -296,13 +296,9 @@ elif st.session_state.page == "teacher_panel" and st.session_state.logged_in:
     st.header("Teacher Dashboard", anchor=False)
     st.markdown("---")
 
-    # ════════════════════════════════════════════════════
-    # BOX 1 — TEMPLATE & FILE UPLOAD
-    # ════════════════════════════════════════════════════
-    with st.container():
-        st.markdown('<div class="section-box">', unsafe_allow_html=True)
+    # ── BOX 1: TEMPLATE & FILE UPLOAD ──────────────────
+    with st.container(border=True):
         st.subheader("📂 Template & Upload", anchor=False)
-
         col_dl, col_up = st.columns([1, 2])
         with col_dl:
             st.markdown("**Step 1 — Download the template:**")
@@ -341,29 +337,22 @@ elif st.session_state.page == "teacher_panel" and st.session_state.logged_in:
                 st.success("✅ Data saved successfully")
                 st.session_state.data_saved = False
 
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    # ════════════════════════════════════════════════════
-    # BOX 2 — CLASS CONFIGURATION
-    # ════════════════════════════════════════════════════
-    with st.container():
-        st.markdown('<div class="section-box">', unsafe_allow_html=True)
+    # ── BOX 2: CLASS CONFIGURATION ─────────────────────
+    with st.container(border=True):
         st.subheader("📊 Class Configuration", anchor=False)
-
         col_a, col_b = st.columns(2)
         with col_a:
             total_students_input = st.number_input("Total Students", min_value=1, value=1)
             max_marks_input      = st.number_input("Maximum Marks (Total)", min_value=1, value=15)
         with col_b:
             threshold_global = st.number_input(
-                "Threshold %",
-                min_value=0, max_value=100, value=50,
-                help="Students scoring ≥ this % per CO are counted as attained"
+                "Threshold %", min_value=0, max_value=100, value=50,
+                help="Students scoring >= this % per CO are counted as attained"
             )
             co_no_config = int(st.number_input("Number of COs", min_value=1, max_value=6, value=3, step=1))
 
         st.markdown("**Set max marks per CO** (must sum to Total Max Marks)")
-        co_max_cols   = st.columns(co_no_config)
+        co_max_cols    = st.columns(co_no_config)
         co_maxes_input = []
         for i in range(co_no_config):
             with co_max_cols[i]:
@@ -377,19 +366,13 @@ elif st.session_state.page == "teacher_panel" and st.session_state.logged_in:
 
         co_sum = sum(co_maxes_input)
         if abs(co_sum - max_marks_input) > 0.01:
-            st.warning(f"⚠️ CO sum = {co_sum} ≠ Total Max = {max_marks_input}")
+            st.warning(f"CO sum = {co_sum} does not match Total Max = {max_marks_input}")
         else:
             st.success(f"✅ {' + '.join(str(v) for v in co_maxes_input)} = {co_sum}")
 
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    # ════════════════════════════════════════════════════
-    # BOX 3 — COURSE & INSTITUTE DETAILS
-    # ════════════════════════════════════════════════════
-    with st.container():
-        st.markdown('<div class="section-box">', unsafe_allow_html=True)
+    # ── BOX 3: COURSE & INSTITUTE DETAILS ──────────────
+    with st.container(border=True):
         st.subheader("🏫 Course & Institute Details", anchor=False)
-
         col_a, col_b = st.columns(2)
         with col_a:
             university_name = st.text_input("University Name", value="CT UNIVERSITY")
@@ -401,17 +384,11 @@ elif st.session_state.page == "teacher_panel" and st.session_state.logged_in:
             course_name_val = st.text_input("Course Name")
         exam_label_val = st.text_input("Exam Label", value="Mid Term Examination")
 
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    # ════════════════════════════════════════════════════
-    # BOX 4 — MANUAL STUDENT ENTRY
-    # ════════════════════════════════════════════════════
-    with st.container():
-        st.markdown('<div class="section-box">', unsafe_allow_html=True)
+    # ── BOX 4: MANUAL STUDENT ENTRY ────────────────────
+    with st.container(border=True):
         st.subheader("✏️ Manual Student Entry", anchor=False)
 
         co_no = st.number_input("Number of CO", min_value=0, max_value=6, step=1)
-
         co_marks_inputs = []
         for i in range(int(co_no)):
             co_marks_inputs.append(
@@ -419,19 +396,19 @@ elif st.session_state.page == "teacher_panel" and st.session_state.logged_in:
             )
 
         with st.form(f"student_form_{st.session_state.reset_key}"):
-            subject = st.text_input("Subject Name")
-            code    = st.text_input("Subject Code")
+            subject   = st.text_input("Subject Name")
+            code      = st.text_input("Subject Code")
             threshold = st.number_input("Threshold Marks", min_value=0, value=0)
-            name   = st.text_input("Student Name")
-            status = st.selectbox("Attendance", ["Present", "Absent"])
+            name      = st.text_input("Student Name")
+            status    = st.selectbox("Attendance", ["Present", "Absent"])
             submit_student = st.form_submit_button("➕ Add Student", use_container_width=True)
 
             if submit_student:
                 if name.strip() == "" or subject.strip() == "" or code.strip() == "":
                     st.error("❌ Student Name, Subject Name and Subject Code are required")
                 else:
-                    marks_int  = [int(x) if x.isdigit() else 0 for x in co_marks_inputs]
-                    total      = sum(marks_int)
+                    marks_int = [int(x) if x.isdigit() else 0 for x in co_marks_inputs]
+                    total     = sum(marks_int)
                     students.insert_one({
                         "student": name, "teacher": st.session_state.teacher,
                         "subject": subject, "code": code,
@@ -443,22 +420,16 @@ elif st.session_state.page == "teacher_panel" and st.session_state.logged_in:
                     st.session_state.reset_key += 1
                     st.rerun()
 
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    # ════════════════════════════════════════════════════
-    # BOX 5 — DOWNLOAD & CALCULATE ATTAINMENT
-    # ════════════════════════════════════════════════════
-    with st.container():
-        st.markdown('<div class="section-box">', unsafe_allow_html=True)
+    # ── BOX 5: DOWNLOAD & CALCULATE ATTAINMENT ─────────
+    with st.container(border=True):
         st.subheader("📥 Download & Calculate Attainment", anchor=False)
 
         col1, col2 = st.columns(2)
         with col1:
-            download_clicked  = st.button("📊 Download My Students Data",  use_container_width=True)
+            download_clicked  = st.button("📊 Download My Students Data", use_container_width=True)
         with col2:
-            calculate_clicked = st.button("🎯 Calculate Attainment",        use_container_width=True)
+            calculate_clicked = st.button("🎯 Calculate Attainment",       use_container_width=True)
 
-        # -------- DOWNLOAD LOGIC --------
         if download_clicked:
             student_data = list(students.find({"teacher": st.session_state.teacher}))
             upload_data  = list(uploads.find({"teacher": st.session_state.teacher}))
@@ -493,9 +464,9 @@ elif st.session_state.page == "teacher_panel" and st.session_state.logged_in:
                         "max_marks": d.get("Max Marks", max_marks_input),
                     }
 
-                normalised  = [normalise(d) for d in all_data]
-                max_co      = max((len(n["co_vals"]) for n in normalised), default=0)
-                co_headers  = [f"CO{i+1}" for i in range(max_co)]
+                normalised     = [normalise(d) for d in all_data]
+                max_co         = max((len(n["co_vals"]) for n in normalised), default=0)
+                co_headers     = [f"CO{i+1}" for i in range(max_co)]
                 formatted_data = []
 
                 for n in normalised:
@@ -505,11 +476,11 @@ elif st.session_state.page == "teacher_panel" and st.session_state.logged_in:
                     att_pct   = min((obtained / max_marks * 100), 100) if max_marks > 0 else 0
                     att_level = 3 if att_pct>=70 else (2 if att_pct>=60 else (1 if att_pct>=50 else 0))
                     row = {
-                        "Student Name": n["name"], "Reg No": n["reg_no"],
-                        "Subject Name": n["subject"], "Subject Code": n["code"],
-                        "Attendance":   n["status"],  "Max Marks": max_marks,
-                        "Obtained Marks": obtained,   "Final Marks": n["final_total"],
-                        "Threshold":    n["threshold"],"Attainment %": round(att_pct, 2),
+                        "Student Name": n["name"],      "Reg No": n["reg_no"],
+                        "Subject Name": n["subject"],   "Subject Code": n["code"],
+                        "Attendance":   n["status"],    "Max Marks": max_marks,
+                        "Obtained Marks": obtained,     "Final Marks": n["final_total"],
+                        "Threshold":    n["threshold"], "Attainment %": round(att_pct, 2),
                         "Attainment Level": att_level,
                     }
                     for i in range(max_co):
@@ -535,7 +506,6 @@ elif st.session_state.page == "teacher_panel" and st.session_state.logged_in:
                 st.download_button("⬇️ Download Excel File", dl_buf, file_name=file_name,
                                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-        # -------- ATTAINMENT --------
         if calculate_clicked:
             data_students = list(students.find({"teacher": st.session_state.teacher}))
             data_uploads  = list(uploads.find({"teacher": st.session_state.teacher}))
@@ -549,9 +519,9 @@ elif st.session_state.page == "teacher_panel" and st.session_state.logged_in:
                 threshold_val, max_marks_input,
                 co_maxes=co_maxes_input,
                 teacher=st.session_state.teacher,
-                program=program_name, semester=semester_val,
+                program=program_name,       semester=semester_val,
                 course_code=course_code_val, course_name=course_name_val,
-                department=department_name, university=university_name,
+                department=department_name,  university=university_name,
                 exam_label=exam_label_val
             )
             st.session_state["co_excel_buffer"] = co_excel_buffer
@@ -572,9 +542,9 @@ elif st.session_state.page == "teacher_panel" and st.session_state.logged_in:
 
             st.subheader("📊 Attainment Overview", anchor=False)
             col_c1, col_c2, col_c3, col_c4 = st.columns(4)
-            col_c1.metric("✅ Passed",    passed)
-            col_c2.metric("❌ Failed",    failed)
-            col_c3.metric("🚫 Absent",    absent)
+            col_c1.metric("✅ Passed",     passed)
+            col_c2.metric("❌ Failed",     failed)
+            col_c3.metric("🚫 Absent",     absent)
             col_c4.metric("🎯 Attainment", f"{attainment_pct}%")
 
             present_df = df[df["Status"] != "Absent"].copy()
@@ -602,7 +572,7 @@ elif st.session_state.page == "teacher_panel" and st.session_state.logged_in:
             ax2.bar(range(len(scores)),scores,color=bar_colors,width=1.0,edgecolor="none",alpha=0.85)
             ax2.axhline(y=threshold_val,color="#facc15",linewidth=2,linestyle="--",zorder=5)
             ax2.axhline(y=avg,color="#60a5fa",linewidth=2,linestyle="-",zorder=5)
-            ax2.set_title("Score Distribution (High → Low)",color="white",fontsize=12,fontweight="bold",pad=12)
+            ax2.set_title("Score Distribution (High to Low)",color="white",fontsize=12,fontweight="bold",pad=12)
             ax2.set_xlabel("Students ranked by score",color="#94a3b8",fontsize=10)
             ax2.set_ylabel("Score %",color="#94a3b8",fontsize=10)
             ax2.set_ylim(0,110); ax2.set_xticks([])
@@ -629,11 +599,7 @@ elif st.session_state.page == "teacher_panel" and st.session_state.logged_in:
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 )
 
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    # ════════════════════════════════════════════════════
-    # LOGOUT — at the very bottom
-    # ════════════════════════════════════════════════════
+    # ── LOGOUT ─────────────────────────────────────────
     st.markdown("---")
     if st.button("🚪 Logout", use_container_width=True):
         st.session_state.logged_in = False

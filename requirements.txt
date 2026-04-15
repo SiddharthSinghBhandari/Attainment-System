@@ -1,7 +1,6 @@
-streamlit
-pymongo
-pandas
-matplotlib
-openpyxl
-dnspython
-xlsxwriter
+streamlit>=1.29.0
+pymongo>=4.0.0
+dnspython>=2.0.0
+pandas>=1.5.0
+matplotlib>=3.5.0
+openpyxl>=3.0.0
