@@ -43,6 +43,8 @@ def _merge(ws, r1, c1, r2, c2):
 def calculate_attainment(threshold, max_marks,
                           co_maxes=None,
                           teacher=None,
+                          session_students=None,
+                          session_uploads=None,
                           program="", semester="", course_code="", course_name="",
                           department="Department of Management Studies",
                           university="CT UNIVERSITY",
@@ -53,9 +55,14 @@ def calculate_attainment(threshold, max_marks,
     Returns (df, summary).
     """
 
-    # ── fetch & normalise data (filter by teacher) ───────────────────────────
-    q = {"teacher": teacher} if teacher else {}
-    raw_data = list(students.find(q)) + list(uploads.find(q))
+    # ── fetch data: use session data if provided, otherwise query MongoDB ──────
+    if session_students is not None or session_uploads is not None:
+        # Only use data from the current session
+        raw_data = list(session_students or []) + list(session_uploads or [])
+    else:
+        # Fallback: query MongoDB filtered by teacher
+        q = {"teacher": teacher} if teacher else {}
+        raw_data = list(students.find(q)) + list(uploads.find(q))
 
     def normalise(s):
         name = (s.get("student") or s.get("Student Name") or
@@ -85,18 +92,10 @@ def calculate_attainment(threshold, max_marks,
 
     # ── max-marks per CO ──────────────────────────────────────────────────────
     if co_maxes and len(co_maxes) >= num_co:
+        # Use exactly what the teacher set — validated by UI co_sum check
         co_maxes = [float(v) for v in co_maxes[:num_co]]
-        # Safety: if any student mark exceeds its CO max, the max is wrong.
-        # Auto-correct by using the actual max mark seen per CO.
-        for i in range(num_co):
-            max_seen = max(
-                (d["co_vals"][i] for d in data if i < len(d["co_vals"]) and d["status"] != "Absent"),
-                default=0
-            )
-            if max_seen > co_maxes[i]:
-                co_maxes[i] = float(max_seen)
     else:
-        # fallback: split evenly
+        # Fallback: split evenly if no co_maxes provided
         base = round(max_marks / num_co, 1)
         co_maxes = [base] * num_co
 
@@ -240,7 +239,7 @@ def calculate_attainment(threshold, max_marks,
                 absent_co[i] += 1
                 co_pcts.append(0)
             else:
-                pct = round(co_vals[i] / co_maxes[i] * 100, 2) if co_maxes[i] > 0 else 0
+                pct = min(round(co_vals[i] / co_maxes[i] * 100, 2), 100.0) if co_maxes[i] > 0 else 0
                 _set(ws, r, COL_CO1_PCT + i, pct)
                 co_pcts.append(pct)
                 if pct >= threshold:
@@ -274,7 +273,7 @@ def calculate_attainment(threshold, max_marks,
         vals_pct = []
         for d in present_rows:
             v = d["co_vals"][i] if i < len(d["co_vals"]) else 0
-            vals_pct.append(round(v / co_maxes[i] * 100, 2) if co_maxes[i] > 0 else 0)
+            vals_pct.append(min(round(v / co_maxes[i] * 100, 2), 100.0) if co_maxes[i] > 0 else 0)
         co_avg_pcts.append(round(sum(vals_pct) / len(vals_pct), 2) if vals_pct else 0)
 
     # Per-CO: count present students scoring >= threshold
@@ -283,7 +282,7 @@ def calculate_attainment(threshold, max_marks,
         cnt = 0
         for d in present_rows:
             v = d["co_vals"][i] if i < len(d["co_vals"]) else 0
-            pct = round(v / co_maxes[i] * 100, 2) if co_maxes[i] > 0 else 0
+            pct = min(round(v / co_maxes[i] * 100, 2), 100.0) if co_maxes[i] > 0 else 0
             if pct >= threshold:
                 cnt += 1
         co_above_thresh.append(cnt)

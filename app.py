@@ -68,9 +68,7 @@ def _build_template():
         c(ws, r, 7, None,  size=10, bg=ALT2, locked=False)
 
     ws.freeze_panes = "A2"
-    ws.protection.sheet = True
-    ws.protection.password = ""
-    ws.protection.enable()
+    # No sheet protection — teacher can freely edit all cells
 
     buf = io.BytesIO()
     wb.save(buf)
@@ -285,6 +283,11 @@ elif st.session_state.page == "teacher_login":
                 st.session_state.teacher = username
                 st.session_state.page = "teacher_panel"
                 st.session_state.just_logged_in = True
+                # Clear previous session data on new login
+                st.session_state["session_upload_df"]      = None
+                st.session_state["session_manual_students"] = []
+                st.session_state["_session_students"]       = []
+                st.session_state["_session_uploads"]        = []
                 st.rerun()
             else:
                 st.error("Invalid credentials")
@@ -324,6 +327,7 @@ elif st.session_state.page == "teacher_panel" and st.session_state.logged_in:
                 st.session_state.data_saved = False
 
             if st.button("💾 Save Uploaded Data", use_container_width=True):
+                rows_to_save = []
                 for row in df_upload.to_dict(orient="records"):
                     row["teacher"] = st.session_state.teacher
                     row["status"]  = str(row["Attendance"]).strip() if "Attendance" in row else "Present"
@@ -331,11 +335,28 @@ elif st.session_state.page == "teacher_panel" and st.session_state.logged_in:
                         try:    row["Max Marks"] = float(row["Max Marks"])
                         except: row["Max Marks"] = 15
                     uploads.insert_one(row)
+                    rows_to_save.append(row)
+                # Store this session's uploaded data so download only shows THIS upload
+                st.session_state["session_upload_df"] = df_upload.copy()
                 st.session_state.data_saved = True
 
             if st.session_state.data_saved:
                 st.success("✅ Data saved successfully")
                 st.session_state.data_saved = False
+
+        # Clear session data button
+        has_session = (
+            st.session_state.get("session_upload_df") is not None or
+            bool(st.session_state.get("session_manual_students"))
+        )
+        if has_session:
+            if st.button("🗑️ Clear Session Data (start fresh)", use_container_width=True):
+                st.session_state["session_upload_df"]       = None
+                st.session_state["session_manual_students"] = []
+                st.session_state["_session_students"]       = []
+                st.session_state["_session_uploads"]        = []
+                st.success("Session cleared. Upload new data to start fresh.")
+                st.rerun()
 
     # ── BOX 2: CLASS CONFIGURATION ─────────────────────
     with st.container(border=True):
@@ -409,12 +430,17 @@ elif st.session_state.page == "teacher_panel" and st.session_state.logged_in:
                 else:
                     marks_int = [int(x) if x.isdigit() else 0 for x in co_marks_inputs]
                     total     = sum(marks_int)
-                    students.insert_one({
+                    new_student = {
                         "student": name, "teacher": st.session_state.teacher,
                         "subject": subject, "code": code,
                         "threshold": int(threshold), "co_marks": marks_int,
                         "total": total, "final_total": total, "status": status
-                    })
+                    }
+                    students.insert_one(new_student)
+                    # Track manually added students for this session
+                    if "session_manual_students" not in st.session_state:
+                        st.session_state["session_manual_students"] = []
+                    st.session_state["session_manual_students"].append(new_student)
                     st.success("✅ Student Added Successfully")
                     time.sleep(1)
                     st.session_state.reset_key += 1
@@ -431,12 +457,20 @@ elif st.session_state.page == "teacher_panel" and st.session_state.logged_in:
             calculate_clicked = st.button("🎯 Calculate Attainment",       use_container_width=True)
 
         if download_clicked:
-            student_data = list(students.find({"teacher": st.session_state.teacher}))
-            upload_data  = list(uploads.find({"teacher": st.session_state.teacher}))
-            all_data     = student_data + upload_data
+            # Use only data from THIS session (uploaded file OR manually added)
+            # Not all historical data from MongoDB
+            session_manual = st.session_state.get("session_manual_students", [])
+            session_upload_df = st.session_state.get("session_upload_df", None)
+
+            all_data = list(session_manual)
+            if session_upload_df is not None:
+                for row in session_upload_df.to_dict(orient="records"):
+                    row["teacher"] = st.session_state.get("teacher", "")
+                    row["status"]  = str(row.get("Attendance", "Present")).strip()
+                    all_data.append(row)
 
             if not all_data:
-                st.warning("⚠️ No data available to download")
+                st.warning("⚠️ No data for this session. Upload a file or add students manually first.")
             else:
                 def normalise(d):
                     name   = (d.get("student") or d.get("Student Name") or d.get("Name") or d.get("student_name") or "")
@@ -507,18 +541,32 @@ elif st.session_state.page == "teacher_panel" and st.session_state.logged_in:
                                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
         if calculate_clicked:
-            data_students = list(students.find({"teacher": st.session_state.teacher}))
-            data_uploads  = list(uploads.find({"teacher": st.session_state.teacher}))
+            # Use only THIS session's data
+            session_manual = st.session_state.get("session_manual_students", [])
+            session_upload_df = st.session_state.get("session_upload_df", None)
 
-            if len(data_students) == 0 and len(data_uploads) == 0:
-                st.warning("⚠️ No students found in database")
+            session_uploads = []
+            if session_upload_df is not None:
+                for row in session_upload_df.to_dict(orient="records"):
+                    row["teacher"] = st.session_state.get("teacher", "")
+                    row["status"]  = str(row.get("Attendance", "Present")).strip()
+                    session_uploads.append(row)
+
+            if len(session_manual) == 0 and len(session_uploads) == 0:
+                st.warning("⚠️ No data for this session. Upload a file or add students manually first.")
                 st.stop()
+
+            # Temporarily pass session data to calculate_attainment via a flag
+            st.session_state["_session_students"] = session_manual
+            st.session_state["_session_uploads"]  = session_uploads
 
             threshold_val = int(threshold_global)
             df, summary, co_excel_buffer = calculate_attainment(
                 threshold_val, max_marks_input,
                 co_maxes=co_maxes_input,
                 teacher=st.session_state.teacher,
+                session_students=st.session_state.get("_session_students", []),
+                session_uploads=st.session_state.get("_session_uploads", []),
                 program=program_name,       semester=semester_val,
                 course_code=course_code_val, course_name=course_name_val,
                 department=department_name,  university=university_name,
