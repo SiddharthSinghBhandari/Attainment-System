@@ -156,141 +156,209 @@ with col2:
 
 
 # ---------------- ADMIN REGISTER ----------------
+# ─────────────────────────────────────────────────────────
+# ADMIN REGISTER
+# ─────────────────────────────────────────────────────────
 if st.session_state.page == "admin_register":
 
-    st.header("Create Admin Account", anchor=False)
+    _, col, _ = st.columns([1, 2, 1])
+    with col:
+        with st.container(border=True):
+            st.markdown("### 🛡️ Create Admin Account")
+            st.markdown("Register a new administrator for this system.")
+            st.markdown("---")
+            with st.form("admin_register_form"):
+                username = st.text_input("👤 Admin Username", placeholder="Enter username")
+                password = st.text_input("🔒 Password", type="password", placeholder="Enter password")
+                confirm  = st.text_input("🔒 Confirm Password", type="password", placeholder="Re-enter password")
+                submitted = st.form_submit_button("Create Admin Account", use_container_width=True)
 
-    with st.form("admin_register_form"):
-        username = st.text_input("Admin Username")
-        password = st.text_input("Password", type="password")
+                if submitted:
+                    if not username.strip() or not password.strip():
+                        st.error("❌ All fields are required.")
+                    elif password != confirm:
+                        st.error("❌ Passwords do not match.")
+                    elif users.find_one({"username": username.strip(), "role": "admin"}):
+                        st.error("❌ Admin with this username already exists.")
+                    else:
+                        users.insert_one({"username": username.strip(), "password": password, "role": "admin"})
+                        st.success("✅ Admin account created successfully!")
 
-        submitted = st.form_submit_button("Create Admin")
-
-        if submitted:
-            if users.find_one({"role": "admin"}):
-                st.error("Admin already exists")
-            elif username.strip() == "" or password.strip() == "":
-                st.error("Fill all fields")
-            else:
-                users.insert_one({
-                    "username": username,
-                    "password": password,
-                    "role": "admin"
-                })
-                st.success("Admin account created")
+        st.markdown("")
+        if st.button("← Back to Home", use_container_width=True):
+            st.session_state.page = "home"
+            st.rerun()
 
 
-# ---------------- ADMIN LOGIN ----------------
+# ─────────────────────────────────────────────────────────
+# ADMIN LOGIN
+# ─────────────────────────────────────────────────────────
 elif st.session_state.page == "admin_login":
 
-    st.header("Admin Login", anchor=False)
+    _, col, _ = st.columns([1, 2, 1])
+    with col:
+        with st.container(border=True):
+            st.markdown("### 🛡️ Admin Login")
+            st.markdown("Sign in to manage teachers and system settings.")
+            st.markdown("---")
+            with st.form("admin_login_form"):
+                username  = st.text_input("👤 Username", placeholder="Enter your username")
+                password  = st.text_input("🔒 Password", type="password", placeholder="Enter your password")
+                submitted = st.form_submit_button("Login as Admin", use_container_width=True)
 
-    with st.form("admin_login_form"):
-        username = st.text_input("Username")
-        password = st.text_input("Password", type="password")
+                if submitted:
+                    if not username.strip() or not password.strip():
+                        st.error("❌ Please fill in all fields.")
+                    else:
+                        user = users.find_one({"username": username.strip(), "password": password, "role": "admin"})
+                        if user:
+                            st.session_state.logged_in      = True
+                            st.session_state.admin_username = username.strip()
+                            st.session_state.page           = "admin_panel"
+                            st.session_state.just_logged_in = True
+                            st.rerun()
+                        else:
+                            st.error("❌ Invalid username or password.")
 
-        submitted = st.form_submit_button("Login")
-
-        if submitted:
-            user = users.find_one({
-                "username": username,
-                "password": password,
-                "role": "admin"
-            })
-
-            if user:
-                st.session_state.logged_in = True
-                st.session_state.page = "admin_panel"
-                st.session_state.just_logged_in = True
-                st.rerun()
-            else:
-                st.error("Invalid credentials")
+        st.markdown("")
+        if st.button("← Back to Home", use_container_width=True):
+            st.session_state.page = "home"
+            st.rerun()
 
 
-# ---------------- ADMIN DASHBOARD ----------------
+# ─────────────────────────────────────────────────────────
+# ADMIN DASHBOARD
+# ─────────────────────────────────────────────────────────
 elif st.session_state.page == "admin_panel" and st.session_state.logged_in:
 
-    st.header("Admin Dashboard", anchor=False)
+    admin_name = st.session_state.get("admin_username", "Admin")
+    st.header(f"🛡️ Admin Dashboard", anchor=False)
+    st.markdown(f"Welcome, **{admin_name}**")
+    st.markdown("---")
 
-    if st.button("Logout"):
+    # ── Stats row ──────────────────────────────────────────
+    teachers_list = list(users.find({"role": "teacher"}))
+    admins_list   = list(users.find({"role": "admin"}))
+
+    c1, c2, c3 = st.columns(3)
+    c1.metric("👨‍🏫 Teachers",  len(teachers_list))
+    c2.metric("🛡️ Admins",    len(admins_list))
+    c3.metric("👥 Total Users", len(teachers_list) + len(admins_list))
+
+    st.markdown("")
+
+    # ── Teachers ───────────────────────────────────────────
+    with st.container(border=True):
+        st.subheader("👨‍🏫 Registered Teachers", anchor=False)
+        if teachers_list:
+            for t in teachers_list:
+                col1, col2 = st.columns([5, 1])
+                with col1:
+                    st.markdown(f"**{t['username']}**")
+                with col2:
+                    if st.button("🗑️ Delete", key=f"del_t_{t['_id']}"):
+                        users.delete_one({"_id": t["_id"]})
+                        st.success(f"Teacher '{t['username']}' removed.")
+                        st.rerun()
+        else:
+            st.info("No teachers registered yet.")
+
+    # ── Admins ─────────────────────────────────────────────
+    with st.container(border=True):
+        st.subheader("🛡️ Registered Admins", anchor=False)
+        for a in admins_list:
+            col1, col2 = st.columns([5, 1])
+            with col1:
+                badge = " *(you)*" if a["username"] == admin_name else ""
+                st.markdown(f"**{a['username']}**{badge}")
+            with col2:
+                if a["username"] != admin_name:
+                    if st.button("🗑️ Delete", key=f"del_a_{a['_id']}"):
+                        users.delete_one({"_id": a["_id"]})
+                        st.success(f"Admin '{a['username']}' removed.")
+                        st.rerun()
+                else:
+                    st.caption("(current)")
+
+    st.markdown("---")
+    if st.button("🚪 Logout", use_container_width=True):
         st.session_state.logged_in = False
-        st.session_state.page = "home"
+        st.session_state.page      = "home"
         st.rerun()
 
-    st.subheader("Registered Teachers", anchor=False)
 
-    teachers = list(users.find({"role": "teacher"}))
-
-    if teachers:
-        for t in teachers:
-            col1, col2 = st.columns([6, 1])
-
-            with col1:
-                st.write(f"👨‍🏫 {t['username']}")
-
-            with col2:
-                if st.button("Delete", key=str(t["_id"])):
-                    users.delete_one({"_id": t["_id"]})
-                    st.success("Teacher deleted")
-                    st.rerun()
-    else:
-        st.info("No teachers registered")
-
-
-# ---------------- TEACHER REGISTER ----------------
+# ─────────────────────────────────────────────────────────
+# TEACHER REGISTER
+# ─────────────────────────────────────────────────────────
 elif st.session_state.page == "teacher_register":
 
-    st.header("Create Teacher Account", anchor=False)
+    _, col, _ = st.columns([1, 2, 1])
+    with col:
+        with st.container(border=True):
+            st.markdown("### 👨‍🏫 Create Teacher Account")
+            st.markdown("Register a new teacher to use the attainment system.")
+            st.markdown("---")
+            with st.form("teacher_register_form"):
+                username  = st.text_input("👤 Username", placeholder="Choose a username")
+                password  = st.text_input("🔒 Password", type="password", placeholder="Create a password")
+                confirm   = st.text_input("🔒 Confirm Password", type="password", placeholder="Re-enter password")
+                submitted = st.form_submit_button("Register Teacher", use_container_width=True)
 
-    with st.form("teacher_register_form"):
-        username = st.text_input("Teacher Username")
-        password = st.text_input("Password", type="password")
+                if submitted:
+                    if not username.strip() or not password.strip():
+                        st.error("❌ All fields are required.")
+                    elif password != confirm:
+                        st.error("❌ Passwords do not match.")
+                    elif users.find_one({"username": username.strip()}):
+                        st.error("❌ Username already taken. Choose another.")
+                    else:
+                        users.insert_one({"username": username.strip(), "password": password, "role": "teacher"})
+                        st.success("✅ Teacher account created! You can now log in.")
 
-        submitted = st.form_submit_button("Register Teacher")
-
-        if submitted:
-            if username.strip() == "" or password.strip() == "":
-                st.error("Fill all fields")
-            else:
-                users.insert_one({
-                    "username": username,
-                    "password": password,
-                    "role": "teacher"
-                })
-                st.success("Teacher registered successfully")
+        st.markdown("")
+        if st.button("← Back to Home", use_container_width=True):
+            st.session_state.page = "home"
+            st.rerun()
 
 
-# ---------------- TEACHER LOGIN ----------------
+# ─────────────────────────────────────────────────────────
+# TEACHER LOGIN
+# ─────────────────────────────────────────────────────────
 elif st.session_state.page == "teacher_login":
 
-    st.header("Teacher Login", anchor=False)
+    _, col, _ = st.columns([1, 2, 1])
+    with col:
+        with st.container(border=True):
+            st.markdown("### 👨‍🏫 Teacher Login")
+            st.markdown("Sign in to manage students and calculate attainment.")
+            st.markdown("---")
+            with st.form("teacher_login_form"):
+                username  = st.text_input("👤 Username", placeholder="Enter your username")
+                password  = st.text_input("🔒 Password", type="password", placeholder="Enter your password")
+                submitted = st.form_submit_button("Login as Teacher", use_container_width=True)
 
-    with st.form("teacher_login_form"):
-        username = st.text_input("Username")
-        password = st.text_input("Password", type="password")
+                if submitted:
+                    if not username.strip() or not password.strip():
+                        st.error("❌ Please fill in all fields.")
+                    else:
+                        user = users.find_one({"username": username.strip(), "password": password, "role": "teacher"})
+                        if user:
+                            st.session_state.logged_in      = True
+                            st.session_state.teacher        = username.strip()
+                            st.session_state.page           = "teacher_panel"
+                            st.session_state.just_logged_in = True
+                            st.session_state["session_upload_df"]       = None
+                            st.session_state["session_manual_students"] = []
+                            st.session_state["_session_students"]       = []
+                            st.session_state["_session_uploads"]        = []
+                            st.rerun()
+                        else:
+                            st.error("❌ Invalid username or password.")
 
-        submitted = st.form_submit_button("Login")
-
-        if submitted:
-            user = users.find_one({
-                "username": username,
-                "password": password,
-                "role": "teacher"
-            })
-
-            if user:
-                st.session_state.logged_in = True
-                st.session_state.teacher = username
-                st.session_state.page = "teacher_panel"
-                st.session_state.just_logged_in = True
-                # Clear previous session data on new login
-                st.session_state["session_upload_df"]      = None
-                st.session_state["session_manual_students"] = []
-                st.session_state["_session_students"]       = []
-                st.session_state["_session_uploads"]        = []
-                st.rerun()
-            else:
-                st.error("Invalid credentials")
+        st.markdown("")
+        if st.button("← Back to Home", use_container_width=True):
+            st.session_state.page = "home"
+            st.rerun()
 
 
 # ---------------- TEACHER DASHBOARD ----------------
