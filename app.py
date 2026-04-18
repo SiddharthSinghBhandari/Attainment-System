@@ -622,7 +622,7 @@ elif st.session_state.page == "teacher_panel" and st.session_state.logged_in:
 
             if len(session_manual) == 0 and len(session_uploads) == 0:
                 st.warning("⚠️ No data for this session. Upload a file or add students manually first.")
-                st.stop()
+                calculate_clicked = False
 
             # Temporarily pass session data to calculate_attainment via a flag
             st.session_state["_session_students"] = session_manual
