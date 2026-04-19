@@ -84,7 +84,7 @@ def calculate_attainment(threshold, max_marks,
                 i += 1
         return {"name": name, "reg_no": reg_no, "status": status, "co_vals": co_vals}
 
-    data = [normalise(s) for s in raw_data]
+    data = [d for d in [normalise(s) for s in raw_data] if str(d["name"]).strip() and str(d["name"]).strip().lower() not in ("nan","none","")]
 
     # ── detect number of COs ──────────────────────────────────────────────────
     num_co = max((len(d["co_vals"]) for d in data), default=3)
