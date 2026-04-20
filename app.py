@@ -642,78 +642,84 @@ elif st.session_state.page == "teacher_panel" and st.session_state.logged_in:
             )
             st.session_state["co_excel_buffer"] = co_excel_buffer
 
-            df["Total %"] = df["Total Marks"].apply(
-                lambda m: round(m / max_marks_input * 100, 2) if max_marks_input > 0 else 0
-            )
-            df["Status"] = df.apply(
-                lambda row: "Absent" if row["Status"] == "Absent"
-                            else ("Pass" if row["Total %"] >= threshold_val else "Fail"), axis=1
-            )
-
-            passed = (df["Status"] == "Pass").sum()
-            failed = (df["Status"] == "Fail").sum()
-            absent = (df["Status"] == "Absent").sum()
-            total_present  = passed + failed
-            attainment_pct = round(passed / total_present * 100, 2) if total_present > 0 else 0
-
-            st.subheader("📊 Attainment Overview", anchor=False)
-            col_c1, col_c2, col_c3, col_c4 = st.columns(4)
-            col_c1.metric("✅ Passed",     passed)
-            col_c2.metric("❌ Failed",     failed)
-            col_c3.metric("🚫 Absent",     absent)
-            col_c4.metric("🎯 Attainment", f"{attainment_pct}%")
-
-            present_df = df[df["Status"] != "Absent"].copy()
-            present_df = present_df.sort_values("Total %", ascending=False).reset_index(drop=True)
-            scores = present_df["Total %"].tolist()
-            avg    = round(sum(scores) / len(scores), 1) if scores else 0
-
-            fig, axes = plt.subplots(1, 2, figsize=(13, 5))
-            fig.patch.set_facecolor("#1e293b")
-
-            ax1 = axes[0]; ax1.set_facecolor("#1e293b")
-            bars = ax1.bar(["Passed","Failed","Absent"],[passed,failed,absent],
-                           color=["#22c55e","#ef4444","#94a3b8"],width=0.5,edgecolor="none")
-            for bar, val in zip(bars,[passed,failed,absent]):
-                ax1.text(bar.get_x()+bar.get_width()/2, bar.get_height()+0.3,
-                         str(int(val)),ha="center",va="bottom",color="white",fontsize=13,fontweight="bold")
-            ax1.set_title("Pass / Fail / Absent",color="white",fontsize=12,fontweight="bold",pad=12)
-            ax1.tick_params(colors="white",labelsize=11)
-            ax1.set_ylim(0,max(passed,failed,absent,1)*1.25)
-            for spine in ax1.spines.values(): spine.set_visible(False)
-            ax1.yaxis.set_visible(False); ax1.grid(False)
-
-            ax2 = axes[1]; ax2.set_facecolor("#1e293b")
-            bar_colors = ["#22c55e" if s>=threshold_val else "#ef4444" for s in scores]
-            ax2.bar(range(len(scores)),scores,color=bar_colors,width=1.0,edgecolor="none",alpha=0.85)
-            ax2.axhline(y=threshold_val,color="#facc15",linewidth=2,linestyle="--",zorder=5)
-            ax2.axhline(y=avg,color="#60a5fa",linewidth=2,linestyle="-",zorder=5)
-            ax2.set_title("Score Distribution (High to Low)",color="white",fontsize=12,fontweight="bold",pad=12)
-            ax2.set_xlabel("Students ranked by score",color="#94a3b8",fontsize=10)
-            ax2.set_ylabel("Score %",color="#94a3b8",fontsize=10)
-            ax2.set_ylim(0,110); ax2.set_xticks([])
-            ax2.tick_params(colors="#94a3b8",labelsize=9)
-            for spine in ax2.spines.values(): spine.set_visible(False)
-            ax2.grid(axis="y",color="#374151",linewidth=0.6,alpha=0.5)
-
-            import matplotlib.patches as mpatches
-            ax2.legend(handles=[
-                mpatches.Patch(color="#22c55e", label=f"Above threshold ({passed})"),
-                mpatches.Patch(color="#ef4444", label=f"Below threshold ({failed})"),
-                plt.Line2D([0],[0],color="#facc15",linewidth=2,linestyle="--",label=f"Threshold: {threshold_val}%"),
-                plt.Line2D([0],[0],color="#60a5fa",linewidth=2,label=f"Class Avg: {avg}%")],
-                facecolor="#0f172a",edgecolor="#334155",labelcolor="white",fontsize=8.5,loc="upper right")
-
-            plt.tight_layout(pad=2)
-            st.pyplot(fig)
-
-            co_buf = st.session_state.get("co_excel_buffer")
-            if co_buf:
-                st.download_button(
-                    "⬇️ Download CO Attainment Report",
-                    co_buf, file_name="CO_Attainment.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            if df.empty:
+                st.warning("⚠️ No valid student data found. Check your uploaded file.")
+                calculate_clicked = False
+            else:
+                # df already has Total % from calculate.py; recompute Status with UI threshold
+                if "Total %" not in df.columns:
+                    df["Total %"] = df["Total Marks"].apply(
+                        lambda m: round(m / max_marks_input * 100, 2) if max_marks_input > 0 else 0
+                    )
+                df["Status"] = df.apply(
+                    lambda row: "Absent" if row["Status"] == "Absent"
+                                else ("Pass" if row["Total %"] >= threshold_val else "Fail"), axis=1
                 )
+
+                passed = (df["Status"] == "Pass").sum()
+                failed = (df["Status"] == "Fail").sum()
+                absent = (df["Status"] == "Absent").sum()
+                total_present  = passed + failed
+                attainment_pct = round(passed / total_present * 100, 2) if total_present > 0 else 0
+
+                st.subheader("📊 Attainment Overview", anchor=False)
+                col_c1, col_c2, col_c3, col_c4 = st.columns(4)
+                col_c1.metric("✅ Passed",     passed)
+                col_c2.metric("❌ Failed",     failed)
+                col_c3.metric("🚫 Absent",     absent)
+                col_c4.metric("🎯 Attainment", f"{attainment_pct}%")
+
+                present_df = df[df["Status"] != "Absent"].copy()
+                present_df = present_df.sort_values("Total %", ascending=False).reset_index(drop=True)
+                scores = present_df["Total %"].tolist()
+                avg    = round(sum(scores) / len(scores), 1) if scores else 0
+
+                fig, axes = plt.subplots(1, 2, figsize=(13, 5))
+                fig.patch.set_facecolor("#1e293b")
+
+                ax1 = axes[0]; ax1.set_facecolor("#1e293b")
+                bars = ax1.bar(["Passed","Failed","Absent"],[passed,failed,absent],
+                               color=["#22c55e","#ef4444","#94a3b8"],width=0.5,edgecolor="none")
+                for bar, val in zip(bars,[passed,failed,absent]):
+                    ax1.text(bar.get_x()+bar.get_width()/2, bar.get_height()+0.3,
+                             str(int(val)),ha="center",va="bottom",color="white",fontsize=13,fontweight="bold")
+                ax1.set_title("Pass / Fail / Absent",color="white",fontsize=12,fontweight="bold",pad=12)
+                ax1.tick_params(colors="white",labelsize=11)
+                ax1.set_ylim(0,max(passed,failed,absent,1)*1.25)
+                for spine in ax1.spines.values(): spine.set_visible(False)
+                ax1.yaxis.set_visible(False); ax1.grid(False)
+
+                ax2 = axes[1]; ax2.set_facecolor("#1e293b")
+                bar_colors = ["#22c55e" if s>=threshold_val else "#ef4444" for s in scores]
+                ax2.bar(range(len(scores)),scores,color=bar_colors,width=1.0,edgecolor="none",alpha=0.85)
+                ax2.axhline(y=threshold_val,color="#facc15",linewidth=2,linestyle="--",zorder=5)
+                ax2.axhline(y=avg,color="#60a5fa",linewidth=2,linestyle="-",zorder=5)
+                ax2.set_title("Score Distribution (High to Low)",color="white",fontsize=12,fontweight="bold",pad=12)
+                ax2.set_xlabel("Students ranked by score",color="#94a3b8",fontsize=10)
+                ax2.set_ylabel("Score %",color="#94a3b8",fontsize=10)
+                ax2.set_ylim(0,110); ax2.set_xticks([])
+                ax2.tick_params(colors="#94a3b8",labelsize=9)
+                for spine in ax2.spines.values(): spine.set_visible(False)
+                ax2.grid(axis="y",color="#374151",linewidth=0.6,alpha=0.5)
+
+                import matplotlib.patches as mpatches
+                ax2.legend(handles=[
+                    mpatches.Patch(color="#22c55e", label=f"Above threshold ({passed})"),
+                    mpatches.Patch(color="#ef4444", label=f"Below threshold ({failed})"),
+                    plt.Line2D([0],[0],color="#facc15",linewidth=2,linestyle="--",label=f"Threshold: {threshold_val}%"),
+                    plt.Line2D([0],[0],color="#60a5fa",linewidth=2,label=f"Class Avg: {avg}%")],
+                    facecolor="#0f172a",edgecolor="#334155",labelcolor="white",fontsize=8.5,loc="upper right")
+
+                plt.tight_layout(pad=2)
+                st.pyplot(fig)
+
+                co_buf = st.session_state.get("co_excel_buffer")
+                if co_buf:
+                    st.download_button(
+                        "⬇️ Download CO Attainment Report",
+                        co_buf, file_name="CO_Attainment.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    )
 
     # ── LOGOUT ─────────────────────────────────────────
     st.markdown("---")
