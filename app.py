@@ -395,6 +395,9 @@ elif st.session_state.page == "teacher_panel" and st.session_state.logged_in:
                 st.session_state.data_saved = False
 
             if st.button("💾 Save Uploaded Data", use_container_width=True):
+                # Drop rows with no student name (blank template rows)
+                df_upload = df_upload.dropna(subset=[c for c in df_upload.columns if "name" in c.lower() or "student" in c.lower()], how="all")
+                df_upload = df_upload[df_upload.apply(lambda r: any(str(v).strip() not in ("","nan","None") for v in r), axis=1)]
                 rows_to_save = []
                 for row in df_upload.to_dict(orient="records"):
                     row["teacher"] = st.session_state.teacher
@@ -532,7 +535,15 @@ elif st.session_state.page == "teacher_panel" and st.session_state.logged_in:
 
             all_data = list(session_manual)
             if session_upload_df is not None:
-                for row in session_upload_df.to_dict(orient="records"):
+                # Filter out rows with no student name or reg no (empty template rows)
+                clean_df = session_upload_df[
+                    session_upload_df.apply(
+                        lambda r: str(r.get("Student Name", r.get("student_name", r.get("Name", "")))).strip().lower()
+                                  not in ("", "nan", "none"),
+                        axis=1
+                    )
+                ]
+                for row in clean_df.to_dict(orient="records"):
                     row["teacher"] = st.session_state.get("teacher", "")
                     row["status"]  = str(row.get("Attendance", "Present")).strip()
                     all_data.append(row)
@@ -566,7 +577,7 @@ elif st.session_state.page == "teacher_panel" and st.session_state.logged_in:
                         "max_marks": d.get("Max Marks", max_marks_input),
                     }
 
-                normalised     = [normalise(d) for d in all_data]
+                normalised     = [n for n in [normalise(d) for d in all_data] if str(n["name"]).strip() and str(n["name"]).strip().lower() not in ("nan","none","")]
                 max_co         = max((len(n["co_vals"]) for n in normalised), default=0)
                 co_headers     = [f"CO{i+1}" for i in range(max_co)]
                 formatted_data = []
@@ -615,7 +626,14 @@ elif st.session_state.page == "teacher_panel" and st.session_state.logged_in:
 
             session_uploads = []
             if session_upload_df is not None:
-                for row in session_upload_df.to_dict(orient="records"):
+                clean_df2 = session_upload_df[
+                    session_upload_df.apply(
+                        lambda r: str(r.get("Student Name", r.get("student_name", r.get("Name", "")))).strip().lower()
+                                  not in ("", "nan", "none"),
+                        axis=1
+                    )
+                ]
+                for row in clean_df2.to_dict(orient="records"):
                     row["teacher"] = st.session_state.get("teacher", "")
                     row["status"]  = str(row.get("Attendance", "Present")).strip()
                     session_uploads.append(row)
