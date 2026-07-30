@@ -96,7 +96,7 @@ load_css()
 def show_footer():
     st.markdown("""
         <div class="custom-footer">
-            Developed by Siddharth Singh Bhandari In Collaboration With Amit,Nishant,Tushar | Attainment System 🚀
+            Developed by Siddharth Singh Bhandari| Attainment System 🚀
         </div>
     """, unsafe_allow_html=True)
 
